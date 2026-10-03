@@ -15,6 +15,7 @@ h1{font-weight:200;font-size:clamp(40px,9vw,84px);letter-spacing:.18em;margin:0 
 .link:hover{opacity:.45}
 #game{touch-action:none;cursor:grab;transition:opacity .25s}
 .hud{position:absolute;top:calc(env(safe-area-inset-top,0px) + 18px);font-size:11px;letter-spacing:.22em;opacity:.55;pointer-events:none}
+#field{z-index:1}.hud{z-index:3}#cd{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font-weight:200;font-size:clamp(80px,26vw,240px);pointer-events:none}
 #sc{left:22px}#tm{right:76px}#quit{right:14px;cursor:pointer;pointer-events:auto;padding:12px 8px;margin:-12px -8px;top:calc(env(safe-area-inset-top,0px) + 18px);transition:opacity .2s}#quit:hover{opacity:.3}
 #conf{z-index:5;background:#fff;transition:opacity .2s}
 #board{justify-content:flex-start;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 56px) 24px 56px;touch-action:pan-y}
@@ -55,7 +56,7 @@ transition:transform .17s cubic-bezier(.2,.8,.2,1),font-size .17s cubic-bezier(.
 
 <div class="screen" id="game">
  <div class="hud" id="sc">SCORE 0</div><div class="hud" id="cb" style="left:0;right:0;text-align:center;opacity:.5"></div><div class="hud" id="tm">01:00</div><div class="hud ui" id="quit">TOP</div>
- <div id="field"></div><div id="toast"><b>PRIME COMPLETE</b><span></span></div>
+ <div id="field"></div><div id="cd"></div><div id="toast"><b>PRIME COMPLETE</b><span></span></div>
 </div>
 
 <div class="screen" id="conf"><div style="font-size:13px;letter-spacing:.15em;font-weight:300">中断してTOPに戻りますか？</div>
@@ -154,7 +155,7 @@ function spawn(tt){
  const t=mk(n,0,field.clientWidth/2,field.clientHeight/2);layout();busy=false;
 }
 function showToast(h,v,m){
- toast.querySelector('b').textContent=h;toast.querySelector('span').textContent=(m>1?'×'+m+'  ':'')+'+'+v;
+ toast.querySelector('b').textContent=h;toast.querySelector('span').textContent=(m>1?'×'+m+' = ':'')+'+'+v;
  toast.classList.add('s');clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove('s'),650);
 }
 function pop(t,v){
@@ -174,7 +175,7 @@ function act(t,dir){
  const prime=isP(t.n);
  if(dir>0){
   if(prime)return bad(t);
-  const idx=toks.indexOf(t);ops.push([idx,1,T]);lastOp=T;const [a,b]=split(t.n,rnd);spl++;{const m=MULT[Math.min(spl,5)];$('cb').textContent='×'+m}t.gone=1;
+  const idx=toks.indexOf(t);ops.push([idx,1,T]);lastOp=T;const [a,b]=split(t.n,rnd);spl++;{const m=MULT[Math.min(spl,5)];$('cb').textContent='COMBO '+spl+'  ×'+m}t.gone=1;
   t.el.remove();toks.splice(idx,1);
   const A=mk(a,t.d+1,t.x,t.y),B=mk(b,t.d+1,t.x,t.y);toks.pop();toks.pop();toks.splice(idx,0,A,B);
   [A,B].forEach(z=>{z.el.style.transform=`translate(${t.x-t.w/2}px,${t.y-t.s/2}px)`;z.el.style.fontSize=t.s+'px';z.el.style.width=t.w+'px'});
@@ -221,12 +222,14 @@ addEventListener('resize',layout);
 function show(id){['name','top','game','end','board'].forEach(s=>$(s).classList.toggle('on',s===id))}
 const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 async function begin(){
- if(state==='starting')return;
+ if(state==='starting'||state==='count')return;const my=++runId;
  AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume&&AC.resume();
  state='starting';field.innerHTML='';toks=[];score=0;done=0;cur=0;busy=false;last=0;ops=[];lastOp=-1e9;sid=null;
  $('sc').textContent='SCORE 0';$('tm').textContent='01:00';toast.classList.remove('s');show('game');
  try{const r=await call('startGame',{});sid=r.id;seed=r.seed>>>0}catch(e){seed=(Math.random()*4294967296)>>>0} // 失敗時はオフラインプレイ(ランキング対象外)
- rnd=mulberry32(seed);t0=performance.now();state='play';spawn(0);requestAnimationFrame(tick);
+ if(runId!==my)return;rnd=mulberry32(seed);state='count';
+ for(const c of ['3','2','1']){cd.textContent=c;cd.animate([{opacity:0,transform:'scale(1.15)'},{opacity:1,transform:'none'}],{duration:200,easing:'ease-out'});beep(c==='1'?880:660,.07,.05);await sleep(700);if(runId!==my)return}
+ cd.textContent='';t0=performance.now();state='play';spawn(0);requestAnimationFrame(tick);
 }
 function tick(){
  if(state!=='play')return;const left=DUR-(performance.now()-t0);
@@ -242,8 +245,9 @@ function finish(){
  setTimeout(()=>{toast.classList.remove('s');$('rs').textContent=score;$('rc').textContent=done;state='end';show('end')},1000);
 }
 // ---------- pause ----------
-let pAt=0;
-function pause(){if(state!=='play')return;state='pause';pAt=performance.now();drag=null;$('conf').classList.add('on')}
+let pAt=0,runId=0;const cd=$('cd'),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function pause(){if(state==='starting'||state==='count'){runId++;state='top';cd.textContent='';show('top');return}
+ if(state!=='play')return;state='pause';pAt=performance.now();drag=null;$('conf').classList.add('on')}
 function resume(){if(state!=='pause')return;t0+=performance.now()-pAt;state='play';$('conf').classList.remove('on');requestAnimationFrame(tick)}
 $('quit').onclick=pause;$('cn').onclick=resume;
 $('cy').onclick=()=>{state='top';$('conf').classList.remove('on');show('top')};

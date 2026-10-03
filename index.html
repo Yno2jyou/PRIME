@@ -184,7 +184,7 @@ function act(t,dir){
   t.gone=1;{const ix=toks.indexOf(t);ops.push([ix,-1,T]);lastOp=T;toks.splice(ix,1)}
   t.i.style.transition='transform .2s ease-in,opacity .2s';t.i.style.transform='translateX(-45vw)';t.i.style.opacity=0;
   setTimeout(()=>t.el.remove(),230);
-  score+=t.n;cur+=t.n;$('sc').textContent='SCORE '+score;pop(t,t.n);
+  score+=t.n;cur+=t.n;$('sc').textContent='SCORE '+score;if(toks.length)pop(t,t.n);
   beep(880+Math.min(t.n,900)/3,.09,.06);vib(10);layout();
   if(!toks.length){
    done++;busy=true;

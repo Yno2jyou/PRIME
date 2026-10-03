@@ -31,6 +31,7 @@ h1{font-weight:200;font-size:clamp(40px,9vw,84px);letter-spacing:.18em;margin:0 
 .hud{position:absolute;top:calc(env(safe-area-inset-top,0px) + 18px);font-size:11px;letter-spacing:.22em;opacity:.55;pointer-events:none}
 #field{z-index:1}.hud{z-index:3}#cd{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font-weight:200;font-size:clamp(80px,26vw,240px);pointer-events:none}
 #sc{left:22px}#tm{left:0;right:0;text-align:center}#quit{right:14px;cursor:pointer;pointer-events:auto;padding:12px 8px;margin:-12px -8px;top:calc(env(safe-area-inset-top,0px) + 18px);transition:opacity .2s}#quit:hover{opacity:.3}
+#game:not(.on) #quit{pointer-events:none} /* ゲーム画面以外では、見えない TOP ボタンが他の画面のボタンに被らないように */
 #conf{z-index:5;background:var(--bg);transition:opacity .2s}
 #board{justify-content:flex-start;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 56px) 24px 56px;touch-action:pan-y}
 .bd{width:100%;max-width:420px}.bd .lab{margin:36px 0 14px}.bd .lab:first-child{margin-top:0}

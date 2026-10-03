@@ -388,7 +388,14 @@ mkLv($('lvT'),()=>LV,l=>{LV=l;try{localStorage.setItem('prime_lv',l)}catch(e){}}
 function closeRule(){navAt=performance.now();state='top';show('top')}
 $('rbtn').onclick=()=>{state='rule';show('rule')};$('rback').onclick=closeRule;
 $('sbtn').onclick=openBoard;$('bback').onclick=()=>{state='top';show('top')};
-$('thm').onclick=()=>{const r=document.documentElement,d=r.dataset.theme!=='dark';if(d)r.dataset.theme='dark';else delete r.dataset.theme;
- document.querySelector('meta[name="theme-color"]').content=d?'#000000':'#ffffff';try{localStorage.setItem('prime_theme',d?'dark':'light')}catch(e){}};
+// ライト/ダーク切り替え(TOPのみ)。状態は変数で持ち、押した瞬間(pointerdown)に反応させる
+{const thm=$('thm'),root=document.documentElement,tc=document.querySelector('meta[name="theme-color"]');
+ let dark=root.getAttribute('data-theme')==='dark';
+ const setTheme=d=>{dark=d;if(d)root.setAttribute('data-theme','dark');else root.removeAttribute('data-theme');
+  tc.setAttribute('content',d?'#000000':'#ffffff');try{localStorage.setItem('prime_theme',d?'dark':'light')}catch(e){}};
+ thm.addEventListener('pointerdown',e=>{if(e.button>0)return;e.preventDefault();setTheme(!dark)});
+ thm.addEventListener('click',e=>{if(e.detail===0)setTheme(!dark)}); // キーボード操作(Enter/Space)用
+ thm.addEventListener('keydown',e=>e.stopPropagation()); // Enterでゲームが始まらないように
+}
 $('start').onclick=begin;$('retry').onclick=begin;$('home').onclick=()=>{state='top';show('top')};
 </script></body></html>

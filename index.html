@@ -10,7 +10,8 @@ font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","S
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s}
 .screen.on{opacity:1;pointer-events:auto}
 h1{font-weight:200;font-size:clamp(40px,9vw,84px);letter-spacing:.18em;margin:0 0 0 .18em}
-.sub{font-size:10px;letter-spacing:.3em;opacity:.5;margin:18px 0 64px .3em}
+.sub{font-size:10px;letter-spacing:.3em;opacity:.5;margin:18px 0 56px .3em}
+.lv{display:flex;gap:2px;justify-content:center}.lv span{font-size:13px;padding:8px 6px;cursor:pointer;opacity:.28;transition:opacity .2s;min-width:22px;text-align:center}.lv span.on{opacity:1}.lv span:hover{opacity:.6}
 .link{font-size:12px;letter-spacing:.3em;cursor:pointer;opacity:1;transition:opacity .2s;margin-left:.3em;padding:12px 16px}
 .link:hover{opacity:.45}
 #game{touch-action:none;cursor:grab;transition:opacity .25s}
@@ -49,13 +50,14 @@ transition:transform .17s cubic-bezier(.2,.8,.2,1),font-size .17s cubic-bezier(.
 
 <div class="screen" id="top">
  <div class="link" id="who" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;font-size:10px;opacity:.4;margin:0"></div>
- <h1>PRIME</h1><div class="sub">60 SECONDS</div>
+ <h1>PRIME</h1><div class="sub">47 SECONDS</div>
+ <div class="lab" style="margin:0 0 6px .3em">LEVEL</div><div class="lv" id="lvT" style="margin-bottom:44px"></div>
  <div class="link" id="start">START</div>
  <div class="link" id="sbtn" style="opacity:.5;font-size:10px;margin-top:8px">SCORE</div>
 </div>
 
 <div class="screen" id="game">
- <div class="hud" id="sc">SCORE 0</div><div class="hud" id="cb" style="left:0;right:0;text-align:center;opacity:.5"></div><div class="hud" id="tm">01:00</div><div class="hud ui" id="quit">TOP</div>
+ <div class="hud" id="sc">SCORE 0</div><div class="hud" id="cb" style="left:0;right:0;text-align:center;opacity:.5"></div><div class="hud" id="tm">00:47</div><div class="hud ui" id="quit">TOP</div>
  <div id="field"></div><div id="cd"></div><div id="toast"><b>PRIME COMPLETE</b><span></span></div>
 </div>
 
@@ -63,25 +65,27 @@ transition:transform .17s cubic-bezier(.2,.8,.2,1),font-size .17s cubic-bezier(.
  <div class="row" style="margin-top:36px"><div class="link" id="cy">TOPへ戻る</div><div class="link" id="cn" style="opacity:.5">続ける</div></div></div>
 
 <div class="screen" id="board"><div class="bd">
- <div class="lab">YOUR BEST 5</div><div id="mine"></div>
+ <div class="lv" id="lvB"></div><div class="lab">YOUR BEST 5</div><div id="mine"></div>
  <div class="lab">WORLD TOP 100</div><div id="world"></div>
  <div class="link" id="bback" style="margin:40px 0 0 -16px;opacity:.5;font-size:10px">TOP</div></div></div>
 
-<div class="screen" id="end">
- <div class="lab">SCORE</div><div class="big" id="rs">0</div>
- <div class="lab" style="margin-top:40px">PRIME COMPLETE</div><div style="font-weight:200;font-size:32px" id="rc">0</div>
- <div class="row"><div class="link" id="retry">RETRY</div><div class="link" id="home" style="opacity:.5">TOP</div></div>
-</div>
+<div class="screen" id="end" style="justify-content:flex-start;overflow-y:auto"><div style="margin:auto;display:flex;flex-direction:column;align-items:center;padding:36px 24px;width:100%">
+ <div class="lab" id="rl">LEVEL 1</div><div class="big" id="rs">0</div>
+ <div id="stats" style="width:100%;max-width:300px;margin-top:36px"></div>
+ <div class="row" style="margin-top:36px"><div class="link" id="retry">RETRY</div><div class="link" id="home" style="opacity:.5">TOP</div></div></div></div>
 
 <script>
 const $=id=>document.getElementById(id);
 const field=$('field'),gameEl=$('game'),toast=$('toast');
 // ===== core (shared by client and server: keep identical) =====
-const MULT=[1,10,50,100,150,200]; // 分解回数(0,1,2,3,4,5以上)ごとの倍率
-const DUR=60000,MINGAP=60,LIM=2000,sv=new Uint8Array(LIM+1);sv[0]=sv[1]=1;
-for(let i=2;i*i<=LIM;i++)if(!sv[i])for(let j=i*i;j<=LIM;j+=i)sv[j]=1;
-const P=[];for(let i=2;i<=LIM;i++)if(!sv[i])P.push(i);
-const isP=n=>n>1&&!sv[n];
+const mult=s=>s<=5?[1,10,50,100,150,200][s]:200+50*(s-5); // 分解回数ごとの倍率
+const DUR=47000,MINGAP=60,SV=new Uint8Array(3201);SV[0]=SV[1]=1;
+for(let i=2;i*i<=3200;i++)if(!SV[i])for(let j=i*i;j<=3200;j+=i)SV[j]=1;
+const P=[];for(let i=2;i<=3200;i++)if(!SV[i])P.push(i);
+const isP=n=>{if(n<2)return false;for(const p of P){if(p*p>n)break;if(n%p===0)return n===p}return true}; // n<1.02e7
+const LV_MAP=[1,3,6,8,10]; // 表示レベル1〜5 → 内部の難易度(旧レベル10 = 新レベル5)
+const LV_MAXN=[99,300,999,3000,9999,30000,99999,300000,999999,9999999];
+const LV_K=[[2,3],[2,4],[2,5],[3,6],[3,7],[4,8],[5,10],[5,11],[6,12],[7,14]];
 function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function split(n,rnd){
  const d=[];for(let a=2;a*a<=n;a++)if(n%a===0)d.push(a);
@@ -89,39 +93,37 @@ function split(n,rnd){
  while(i<d.length-1&&(r-=w[i])>0)i++;
  const a=d[i],b=n/a;return rnd()<.5?[a,b]:[b,a];
 }
-function gen(prog,rnd,last){
- const R=(a,b)=>a+Math.floor(rnd()*(b-a+1)),pick=a=>a[Math.floor(rnd()*a.length)];
- const small=P.filter(p=>p<50),mid=P.filter(p=>p>=50&&p<300),big=P.filter(p=>p>=300&&p<1000),huge=P.filter(p=>p>=1000);
- const smp=()=>pick(P.slice(0,8));
- const kinds=[
-  [3,()=>R(4,60)],[3,()=>R(60,300)],[1+prog*3,()=>R(300,1500)],
-  [1.5,()=>pick(small)],[1.8,()=>pick(mid)],[1+prog*1.5,()=>pick(big)],[.2+prog*1.2,()=>pick(huge)],
-  [1.6,()=>{let n=1,k=R(3,5+Math.round(prog*2));while(k--)n*=smp();return n}],
-  [1,()=>{const x=R(3,12+Math.round(prog*20));return x*x}],
-  [1,()=>pick(P.slice(0,12))*pick(P.slice(0,40))]
- ];
- let n;do{let t=kinds.reduce((s,k)=>s+k[0],0),r=rnd()*t,i=0;
- while(i<kinds.length-1&&(r-=kinds[i][0])>0)i++;n=kinds[i][1]();n=Math.min(n,1999);}while(n===last||n<2);
- return n;
+// level 1..5: 桁数(上限)と素因数の個数が増える
+function gen(L,rnd,last){
+ const R=(a,b)=>a+Math.floor(rnd()*(b-a+1));
+ const O=LV_MAP[L-1],maxN=LV_MAXN[O-1],k0=LV_K[O-1][0],k1=LV_K[O-1][1],minN=Math.max(4,Math.floor(maxN/30));
+ for(let g=0;g<60;g++){
+  let n;
+  if(rnd()<.12){const lo=Math.max(2,Math.floor(maxN/10));do{n=R(lo,maxN)}while(!isP(n))}
+  else{n=1;const k=R(k0,k1),m=Math.min(P.length,12+O*3);
+   for(let i=0;i<k;i++){const p=P[Math.floor(rnd()*rnd()*m)];if(n*p>maxN)break;n*=p}}
+  if(n>=minN&&n!==last)return n;
+ }
+ return last===97?89:97;
 }
-// ops: [[tokenIndex, dir(1|-1), tMs], ...]  -> {score,done} or null if invalid
-function replay(seed,ops){
- if(!Array.isArray(ops)||ops.length>3000)return null;
+// ops: [[tokenIndex, dir(1|-1), tMs], ...]  -> {score,done,lastT} or null if invalid
+function replay(seed,level,ops){
+ if(!Number.isInteger(level)||level<1||level>5||!Array.isArray(ops)||ops.length>3000)return null;
  const rnd=mulberry32(seed);let last=0,score=0,done=0,toks=[],prev=-1e9,lastT=0,cur=0,spl=0;
- const spawn=t=>{last=gen(Math.min(1,t/DUR),rnd,last);toks=[{n:last,d:0}];cur=0;spl=0};
- spawn(0);
+ const spawn=()=>{last=gen(level,rnd,last);toks=[{n:last,d:0}];cur=0;spl=0};
+ spawn();
  for(const o of ops){
   if(!Array.isArray(o))return null;const [idx,dir,t]=o;
   if(!Number.isInteger(idx)||!Number.isInteger(t)||t<0||t>=DUR||t-prev<MINGAP)return null;
   prev=lastT=t;const k=toks[idx];if(!k)return null;
   if(dir===1){if(isP(k.n))return null;const [a,b]=split(k.n,rnd);toks.splice(idx,1,{n:a,d:k.d+1},{n:b,d:k.d+1});spl++}
-  else if(dir===-1){if(!isP(k.n))return null;cur+=k.n;toks.splice(idx,1);if(!toks.length){score+=cur*MULT[Math.min(spl,5)];done++;spawn(t)}}
+  else if(dir===-1){if(!isP(k.n))return null;cur+=k.n;toks.splice(idx,1);if(!toks.length){score+=cur*mult(spl);done++;spawn()}}
   else return null;
  }
  return{score,done,lastT};
 }
-if(typeof module!=='undefined')module.exports={MULT,DUR,MINGAP,replay,mulberry32,gen,split,isP};
-let spl=0,rnd=Math.random,seed=0,sid=null,ops=[],lastOp=-1e9,last=0;
+if(typeof module!=='undefined')module.exports={mult,DUR,MINGAP,replay,mulberry32,gen,split,isP};
+let LV=1,bLV=1,spl=0,rnd=Math.random,seed=0,sid=null,ops=[],lastOp=-1e9,last=0;
 // ---------- audio ----------
 let AC;
 function beep(f,d=.05,v=.06,ty='sine',at=0){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();
@@ -151,7 +153,7 @@ function layout(){
   e.style.transform=`translate(${t.x-t.w/2}px,${t.y-t.s/2}px)`;x+=t.w});y+=r.h});
 }
 function spawn(tt){
- const n=last=gen(Math.min(1,tt/DUR),rnd,last);cur=0;spl=0;$('cb').textContent='';
+ const n=last=gen(LV,rnd,last);cur=0;spl=0;$('cb').textContent='';
  const t=mk(n,0,field.clientWidth/2,field.clientHeight/2);layout();busy=false;
 }
 function showToast(h,v,m){
@@ -164,7 +166,8 @@ function pop(t,v){
  requestAnimationFrame(()=>{p.style.opacity=.6;p.style.transform='translateY(-12px)'});
  setTimeout(()=>{p.style.opacity=0},350);setTimeout(()=>p.remove(),900);
 }
-function bad(t){
+let st={};
+function bad(t){st.mi++;
  t.i.style.transition='';t.i.style.transform='';t.i.style.opacity='';
  t.i.animate([{transform:'translateX(0)'},{transform:'translateX(-12px)'},{transform:'translateX(10px)'},{transform:'translateX(-5px)'},{transform:'translateX(0)'}],{duration:190,easing:'ease-out'});
  beep(130,.07,.04,'triangle');vib(6);
@@ -175,7 +178,7 @@ function act(t,dir){
  const prime=isP(t.n);
  if(dir>0){
   if(prime)return bad(t);
-  const idx=toks.indexOf(t);ops.push([idx,1,T]);lastOp=T;const [a,b]=split(t.n,rnd);spl++;{const m=MULT[Math.min(spl,5)];$('cb').textContent='COMBO '+spl+'  ×'+m}t.gone=1;
+  const idx=toks.indexOf(t);ops.push([idx,1,T]);lastOp=T;const [a,b]=split(t.n,rnd);spl++;st.sp++;st.mc=Math.max(st.mc,spl);{const m=mult(spl);$('cb').textContent='COMBO '+spl+'  ×'+m}t.gone=1;
   t.el.remove();toks.splice(idx,1);
   const A=mk(a,t.d+1,t.x,t.y),B=mk(b,t.d+1,t.x,t.y);toks.pop();toks.pop();toks.splice(idx,0,A,B);
   [A,B].forEach(z=>{z.el.style.transform=`translate(${t.x-t.w/2}px,${t.y-t.s/2}px)`;z.el.style.fontSize=t.s+'px';z.el.style.width=t.w+'px'});
@@ -186,11 +189,11 @@ function act(t,dir){
   t.gone=1;{const ix=toks.indexOf(t);ops.push([ix,-1,T]);lastOp=T;toks.splice(ix,1)}
   t.i.style.transition='transform .2s ease-in,opacity .2s';t.i.style.transform='translateX(-45vw)';t.i.style.opacity=0;
   setTimeout(()=>t.el.remove(),230);
-  cur+=t.n;if(toks.length)pop(t,t.n);
+  st.pr++;cur+=t.n;if(toks.length)pop(t,t.n);
   beep(880+Math.min(t.n,900)/3,.09,.06);vib(10);layout();
   if(!toks.length){
    done++;busy=true;
-   const m=MULT[Math.min(spl,5)];score+=cur*m;$('sc').textContent='SCORE '+score;$('cb').textContent='';
+   const m=mult(spl);st.bn=Math.max(st.bn,cur*m);score+=cur*m;$('sc').textContent='SCORE '+score;$('cb').textContent='';
    showToast(t.d===0?'PRIME':'PRIME COMPLETE',cur*m,m);
    if(t.d>0)[1047,1319,1568].forEach((f,i)=>beep(f,.07,.045,'sine',i*.06));
    setTimeout(()=>{if(state==='play')spawn(T)},t.d===0?220:380);
@@ -215,6 +218,7 @@ gameEl.addEventListener('pointerup',endDrag);gameEl.addEventListener('pointercan
 addEventListener('keydown',e=>{
  if(state==='play'){if(e.key==='Escape')pause();else if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();act(toks[0],e.key==='ArrowRight'?1:-1)}}
  else if(state==='pause'){if(e.key==='Escape'||e.key==='Enter')resume()}
+ else if(state==='top'&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){LV=Math.min(5,Math.max(1,LV+(e.key==='ArrowRight'?1:-1)));try{localStorage.setItem('prime_lv',LV)}catch(x){}[...$('lvT').children].forEach((c,j)=>c.className=j+1===LV?'on':'')}
  else if(e.key==='Enter'&&!e.repeat&&(state==='top'||state==='end')&&performance.now()-navAt>400)begin();
 });
 addEventListener('resize',layout);
@@ -224,9 +228,9 @@ const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s
 async function begin(){
  if(state==='starting'||state==='count')return;const my=++runId;
  AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume&&AC.resume();
- state='starting';field.innerHTML='';toks=[];score=0;done=0;cur=0;busy=false;last=0;ops=[];lastOp=-1e9;sid=null;
- $('sc').textContent='SCORE 0';$('tm').textContent='01:00';toast.classList.remove('s');show('game');
- try{const r=await call('startGame',{});sid=r.id;seed=r.seed>>>0}catch(e){seed=(Math.random()*4294967296)>>>0} // 失敗時はオフラインプレイ(ランキング対象外)
+ state='starting';field.innerHTML='';toks=[];score=0;done=0;cur=0;busy=false;last=0;ops=[];lastOp=-1e9;sid=null;st={sp:0,pr:0,mi:0,mc:0,bn:0};
+ $('sc').textContent='SCORE 0';$('tm').textContent='00:47';toast.classList.remove('s');show('game');
+ try{const r=await call('startGame',{level:LV});sid=r.id;seed=r.seed>>>0}catch(e){seed=(Math.random()*4294967296)>>>0} // 失敗時はオフラインプレイ(ランキング対象外)
  if(runId!==my)return;rnd=mulberry32(seed);state='count';
  for(const c of ['3','2','1']){cd.textContent=c;cd.animate([{opacity:0,transform:'scale(1.15)'},{opacity:1,transform:'none'}],{duration:200,easing:'ease-out'});beep(c==='1'?880:660,.07,.05);await sleep(700);if(runId!==my)return}
  cd.textContent='';t0=performance.now();state='play';spawn(0);requestAnimationFrame(tick);
@@ -242,7 +246,13 @@ function finish(){
  toast.querySelector('b').textContent='TIME UP';toast.querySelector('span').textContent='';toast.classList.add('s');
  beep(330,.25,.05);
  submit();
- setTimeout(()=>{toast.classList.remove('s');$('rs').textContent=score;$('rc').textContent=done;state='end';show('end')},1000);
+ setTimeout(()=>{toast.classList.remove('s');$('rs').textContent=score;showStats();state='end';show('end')},1000);
+}
+function showStats(){
+ const h=st.sp+st.pr,acc=h+st.mi?Math.round(h/(h+st.mi)*100):0;
+ const L=[['PRIME COMPLETE',done],['MAX COMBO',st.mc],['BEST NUMBER',st.bn],['SPLITS',st.sp],['PRIMES',st.pr],['MISSES',st.mi],['ACCURACY',acc+'%']];
+ $('rl').textContent='LEVEL '+LV+'  SCORE';const el=$('stats');el.textContent='';
+ L.forEach(([k,v])=>{const r=document.createElement('div');r.className='r';const a=document.createElement('em');a.style.width='auto';a.style.flex='1';a.textContent=k;const b=document.createElement('b');b.style.fontSize='15px';b.textContent=v;r.append(a,b);el.appendChild(r)});
 }
 // ---------- pause ----------
 let pAt=0,runId=0;const cd=$('cd'),sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -268,17 +278,17 @@ const FN='https://asia-northeast1-'+FB.project+'.cloudfunctions.net/';
 async function call(name,data){const a=await auth();
  const r=await fetch(FN+name,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+a.idToken},body:JSON.stringify({data})});
  if(!r.ok)throw 0;return (await r.json()).result}
-async function remoteTop(){
- const r=await fetch(FS+':runQuery',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({structuredQuery:{from:[{collectionId:'scores'}],orderBy:[{field:{fieldPath:'score'},direction:'DESCENDING'}],limit:100}})});
+async function remoteTop(l){
+ const r=await fetch(FS+':runQuery',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({structuredQuery:{from:[{collectionId:'board_'+l}],orderBy:[{field:{fieldPath:'score'},direction:'DESCENDING'}],limit:100}})});
  if(!r.ok)throw 0;const j=await r.json();
  return j.filter(x=>x.document).map(x=>{const f=x.document.fields;return{n:String(f.name.stringValue).slice(0,12),s:+f.score.integerValue,t:Date.parse(f.ts.timestampValue)}});
 }
 let PN=(()=>{try{return localStorage.getItem('prime_name')||''}catch(e){return''}})();
-const LK='prime_best';
-const loadMine=()=>{try{return JSON.parse(localStorage.getItem(LK))||[]}catch(e){return[]}};
+const LK=l=>'prime47_best_'+l;
+const loadMine=l=>{try{return JSON.parse(localStorage.getItem(LK(l)))||[]}catch(e){return[]}};
 function submit(){
  if(score<=0)return;const ts=Date.now();
- try{const a=loadMine();a.push({s:score,t:ts,n:PN});a.sort((x,y)=>y.s-x.s);localStorage.setItem(LK,JSON.stringify(a.slice(0,5)))}catch(e){}
+ try{const a=loadMine(LV);a.push({s:score,t:ts,n:PN});a.sort((x,y)=>y.s-x.s);localStorage.setItem(LK(LV),JSON.stringify(a.slice(0,5)))}catch(e){}
  if(sid){const id=sid;sid=null;call('submitScore',{id,name:PN,ops}).catch(()=>{})}
 }
 const fd=t=>{const d=new Date(t),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())};
@@ -290,8 +300,11 @@ function rows(el,list){
 }
 async function openBoard(){
  show('board');state='board';$('board').scrollTop=0;
- rows($('mine'),loadMine());$('world').innerHTML='<div class="nil">…</div>';
- try{rows($('world'),await remoteTop())}catch(e){$('world').innerHTML='<div class="nil">OFFLINE</div>'}
+ bLV=LV;mkLv($('lvB'),()=>bLV,l=>{bLV=l;loadBoard()});loadBoard();
+}
+async function loadBoard(){const l=bLV;
+ rows($('mine'),loadMine(l));$('world').innerHTML='<div class="nil">…</div>';
+ try{const d=await remoteTop(l);if(l!==bLV)return;rows($('world'),d)}catch(e){$('world').innerHTML='<div class="nil">OFFLINE</div>'}
 }
 const nm=$('nm');nm.value=PN;
 let navAt=0;
@@ -300,6 +313,10 @@ function goTop(){navAt=performance.now();PN=nm.value.trim().slice(0,12)||'ANON';
 nm.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();goTop()}});
 $('who').onclick=()=>{state='name';show('name');nm.focus()};
 addEventListener('load',()=>nm.focus());
+function mkLv(el,get,set){el.textContent='';for(let i=1;i<=5;i++){const x=document.createElement('span');x.textContent=i;if(i===get())x.className='on';
+ x.onclick=()=>{set(i);[...el.children].forEach((c,j)=>c.className=j+1===i?'on':'')};el.appendChild(x)}}
+try{LV=Math.min(5,Math.max(1,+localStorage.getItem('prime_lv')||1))}catch(e){}
+mkLv($('lvT'),()=>LV,l=>{LV=l;try{localStorage.setItem('prime_lv',l)}catch(e){}});
 $('sbtn').onclick=openBoard;$('bback').onclick=()=>{state='top';show('top')};
 $('start').onclick=begin;$('retry').onclick=begin;$('home').onclick=()=>{state='top';show('top')};
 </script></body></html>

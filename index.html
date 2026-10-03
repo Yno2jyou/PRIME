@@ -75,39 +75,51 @@ transition:transform .17s cubic-bezier(.2,.8,.2,1),font-size .17s cubic-bezier(.
 <script>
 const $=id=>document.getElementById(id);
 const field=$('field'),gameEl=$('game'),toast=$('toast');
-// ---------- math ----------
-const LIM=2000,sv=new Uint8Array(LIM+1);sv[0]=sv[1]=1;
+// ===== core (shared by client and server: keep identical) =====
+const DUR=60000,MINGAP=60,LIM=2000,sv=new Uint8Array(LIM+1);sv[0]=sv[1]=1;
 for(let i=2;i*i<=LIM;i++)if(!sv[i])for(let j=i*i;j<=LIM;j+=i)sv[j]=1;
 const P=[];for(let i=2;i<=LIM;i++)if(!sv[i])P.push(i);
 const isP=n=>n>1&&!sv[n];
-const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
-const pick=a=>a[Math.floor(Math.random()*a.length)];
-function split(n){ // random valid factor pair, biased to balanced but varied
+function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function split(n,rnd){
  const d=[];for(let a=2;a*a<=n;a++)if(n%a===0)d.push(a);
- const w=d.map(a=>0.4+a/Math.sqrt(n));let t=w.reduce((x,y)=>x+y),r=Math.random()*t,i=0;
+ const w=d.map(a=>0.4+a/Math.sqrt(n));let t=w.reduce((x,y)=>x+y),r=rnd()*t,i=0;
  while(i<d.length-1&&(r-=w[i])>0)i++;
- const a=d[i],b=n/a;return Math.random()<.5?[a,b]:[b,a];
+ const a=d[i],b=n/a;return rnd()<.5?[a,b]:[b,a];
 }
-let last=0;
-function gen(prog){
+function gen(prog,rnd,last){
+ const R=(a,b)=>a+Math.floor(rnd()*(b-a+1)),pick=a=>a[Math.floor(rnd()*a.length)];
  const small=P.filter(p=>p<50),mid=P.filter(p=>p>=50&&p<300),big=P.filter(p=>p>=300&&p<1000),huge=P.filter(p=>p>=1000);
  const smp=()=>pick(P.slice(0,8));
  const kinds=[
-  [3,()=>R(4,60)],
-  [3,()=>R(60,300)],
-  [1+prog*3,()=>R(300,1500)],
-  [1.5,()=>pick(small)],
-  [1.8,()=>pick(mid)],
-  [1+prog*1.5,()=>pick(big)],
-  [.2+prog*1.2,()=>pick(huge)],
+  [3,()=>R(4,60)],[3,()=>R(60,300)],[1+prog*3,()=>R(300,1500)],
+  [1.5,()=>pick(small)],[1.8,()=>pick(mid)],[1+prog*1.5,()=>pick(big)],[.2+prog*1.2,()=>pick(huge)],
   [1.6,()=>{let n=1,k=R(3,5+Math.round(prog*2));while(k--)n*=smp();return n}],
   [1,()=>{const x=R(3,12+Math.round(prog*20));return x*x}],
   [1,()=>pick(P.slice(0,12))*pick(P.slice(0,40))]
  ];
- let n;do{let t=kinds.reduce((s,k)=>s+k[0],0),r=Math.random()*t,i=0;
+ let n;do{let t=kinds.reduce((s,k)=>s+k[0],0),r=rnd()*t,i=0;
  while(i<kinds.length-1&&(r-=kinds[i][0])>0)i++;n=kinds[i][1]();n=Math.min(n,1999);}while(n===last||n<2);
- return last=n;
+ return n;
 }
+// ops: [[tokenIndex, dir(1|-1), tMs], ...]  -> {score,done} or null if invalid
+function replay(seed,ops){
+ if(!Array.isArray(ops)||ops.length>3000)return null;
+ const rnd=mulberry32(seed);let last=0,score=0,done=0,toks=[],prev=-1e9,lastT=0;
+ const spawn=t=>{last=gen(Math.min(1,t/DUR),rnd,last);toks=[{n:last,d:0}]};
+ spawn(0);
+ for(const o of ops){
+  if(!Array.isArray(o))return null;const [idx,dir,t]=o;
+  if(!Number.isInteger(idx)||!Number.isInteger(t)||t<0||t>=DUR||t-prev<MINGAP)return null;
+  prev=lastT=t;const k=toks[idx];if(!k)return null;
+  if(dir===1){if(isP(k.n))return null;const [a,b]=split(k.n,rnd);toks.splice(idx,1,{n:a,d:k.d+1},{n:b,d:k.d+1})}
+  else if(dir===-1){if(!isP(k.n))return null;score+=k.n;toks.splice(idx,1);if(!toks.length){done++;spawn(t)}}
+  else return null;
+ }
+ return{score,done,lastT};
+}
+if(typeof module!=='undefined')module.exports={DUR,MINGAP,replay,mulberry32,gen,split,isP};
+let rnd=Math.random,seed=0,sid=null,ops=[],lastOp=-1e9,last=0;
 // ---------- audio ----------
 let AC;
 function beep(f,d=.05,v=.06,ty='sine',at=0){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();
@@ -116,7 +128,6 @@ function beep(f,d=.05,v=.06,ty='sine',at=0){try{AC=AC||new(window.AudioContext||
 const vib=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 // ---------- state ----------
 let toks=[],state='name',score=0,done=0,t0=0,cur=0,busy=false;
-const DUR=60000;
 function mk(n,d,x,y){
  const el=document.createElement('div');el.className='tok';const i=document.createElement('i');i.textContent=n;el.appendChild(i);
  field.appendChild(el);const t={n,d,el,i,x,y};toks.push(t);return t;
@@ -137,9 +148,8 @@ function layout(){
   const e=t.el;e.style.fontSize=t.s+'px';e.style.width=t.w+'px';
   e.style.transform=`translate(${t.x-t.w/2}px,${t.y-t.s/2}px)`;x+=t.w});y+=r.h});
 }
-function spawn(){
- const prog=Math.min(1,(performance.now()-t0)/DUR);
- const n=gen(prog);cur=0;
+function spawn(tt){
+ const n=last=gen(Math.min(1,tt/DUR),rnd,last);cur=0;
  const t=mk(n,0,field.clientWidth/2,field.clientHeight/2);layout();busy=false;
 }
 function showToast(h,v){
@@ -159,10 +169,11 @@ function bad(t){
 }
 function act(t,dir){
  if(state!=='play'||busy||!t||t.gone)return;
+ const T=Math.round(performance.now()-t0);if(T>=DUR||T-lastOp<MINGAP)return;
  const prime=isP(t.n);
  if(dir>0){
   if(prime)return bad(t);
-  const [a,b]=split(t.n),idx=toks.indexOf(t);t.gone=1;
+  const idx=toks.indexOf(t);ops.push([idx,1,T]);lastOp=T;const [a,b]=split(t.n,rnd);t.gone=1;
   t.el.remove();toks.splice(idx,1);
   const A=mk(a,t.d+1,t.x,t.y),B=mk(b,t.d+1,t.x,t.y);toks.pop();toks.pop();toks.splice(idx,0,A,B);
   [A,B].forEach(z=>{z.el.style.transform=`translate(${t.x-t.w/2}px,${t.y-t.s/2}px)`;z.el.style.fontSize=t.s+'px';z.el.style.width=t.w+'px'});
@@ -170,7 +181,7 @@ function act(t,dir){
   beep(520+Math.random()*80,.03,.05,'square');vib(8);
  }else{
   if(!prime)return bad(t);
-  t.gone=1;toks.splice(toks.indexOf(t),1);
+  t.gone=1;{const ix=toks.indexOf(t);ops.push([ix,-1,T]);lastOp=T;toks.splice(ix,1)}
   t.i.style.transition='transform .2s ease-in,opacity .2s';t.i.style.transform='translateX(-45vw)';t.i.style.opacity=0;
   setTimeout(()=>t.el.remove(),230);
   score+=t.n;cur+=t.n;$('sc').textContent='SCORE '+score;pop(t,t.n);
@@ -179,7 +190,7 @@ function act(t,dir){
    done++;busy=true;
    showToast(t.d===0?'PRIME':'PRIME COMPLETE',cur);
    if(t.d>0)[1047,1319,1568].forEach((f,i)=>beep(f,.07,.045,'sine',i*.06));
-   setTimeout(()=>{if(state==='play')spawn()},t.d===0?220:380);
+   setTimeout(()=>{if(state==='play')spawn(T)},t.d===0?220:380);
   }
  }
 }
@@ -207,11 +218,13 @@ addEventListener('resize',layout);
 // ---------- flow ----------
 function show(id){['name','top','game','end','board'].forEach(s=>$(s).classList.toggle('on',s===id))}
 const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
-function begin(){
+async function begin(){
+ if(state==='starting')return;
  AC=AC||new(window.AudioContext||window.webkitAudioContext)();AC.resume&&AC.resume();
- field.innerHTML='';toks=[];score=0;done=0;cur=0;busy=false;last=0;
- $('sc').textContent='SCORE 0';$('tm').textContent='01:00';toast.classList.remove('s');
- show('game');state='play';t0=performance.now();spawn();requestAnimationFrame(tick);
+ state='starting';field.innerHTML='';toks=[];score=0;done=0;cur=0;busy=false;last=0;ops=[];lastOp=-1e9;sid=null;
+ $('sc').textContent='SCORE 0';$('tm').textContent='01:00';toast.classList.remove('s');show('game');
+ try{const r=await call('startGame',{});sid=r.id;seed=r.seed>>>0}catch(e){seed=(Math.random()*4294967296)>>>0} // 失敗時はオフラインプレイ(ランキング対象外)
+ rnd=mulberry32(seed);t0=performance.now();state='play';spawn(0);requestAnimationFrame(tick);
 }
 function tick(){
  if(state!=='play')return;const left=DUR-(performance.now()-t0);
@@ -245,14 +258,10 @@ async function auth(){ // anonymous auth via REST, token cached
  if(!r.ok)throw 0;const j=await r.json();
  return save({uid:j.localId,idToken:j.idToken,refresh:j.refreshToken,exp:Date.now()+j.expiresIn*1000});
 }
-async function remoteSubmit(name,sc,cnt){
- const a=await auth(),H={Authorization:'Bearer '+a.idToken,'Content-Type':'application/json'};
- const g=await fetch(FS+'/scores/'+a.uid,{headers:H});
- if(g.ok){const d=await g.json();const old=+(d.fields&&d.fields.score&&d.fields.score.integerValue)||0;if(sc<=old)return}
- await fetch(FS+':commit',{method:'POST',headers:H,body:JSON.stringify({writes:[{update:{name:'projects/'+FB.project+'/databases/(default)/documents/scores/'+a.uid,
-  fields:{name:{stringValue:name},score:{integerValue:String(sc)},count:{integerValue:String(cnt)}}},
-  updateTransforms:[{fieldPath:'ts',setToServerValue:'REQUEST_TIME'}]}]})});
-}
+const FN='https://asia-northeast1-'+FB.project+'.cloudfunctions.net/';
+async function call(name,data){const a=await auth();
+ const r=await fetch(FN+name,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+a.idToken},body:JSON.stringify({data})});
+ if(!r.ok)throw 0;return (await r.json()).result}
 async function remoteTop(){
  const r=await fetch(FS+':runQuery',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({structuredQuery:{from:[{collectionId:'scores'}],orderBy:[{field:{fieldPath:'score'},direction:'DESCENDING'}],limit:100}})});
  if(!r.ok)throw 0;const j=await r.json();
@@ -264,7 +273,7 @@ const loadMine=()=>{try{return JSON.parse(localStorage.getItem(LK))||[]}catch(e)
 function submit(){
  if(score<=0)return;const ts=Date.now();
  try{const a=loadMine();a.push({s:score,t:ts,n:PN});a.sort((x,y)=>y.s-x.s);localStorage.setItem(LK,JSON.stringify(a.slice(0,5)))}catch(e){}
- remoteSubmit(PN,score,done).catch(()=>{});
+ if(sid){const id=sid;sid=null;call('submitScore',{id,name:PN,ops}).catch(()=>{})}
 }
 const fd=t=>{const d=new Date(t),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())};
 function rows(el,list){

@@ -38,6 +38,28 @@ transition:transform .17s cubic-bezier(.2,.8,.2,1),font-size .17s cubic-bezier(.
 .pop{position:absolute;font-size:13px;letter-spacing:.1em;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s}
 .big{font-weight:200;font-size:clamp(56px,16vw,120px);line-height:1}
 .lab{font-size:10px;letter-spacing:.3em;opacity:.5;margin:0 0 10px .3em}
+/* ---- RULE ---- */
+#rule{justify-content:flex-start;overflow-y:auto;touch-action:pan-y}
+.rl{margin:auto;display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 48px) 24px 48px;width:100%}
+.rl .lab{margin-bottom:30px}
+.rg{display:flex;flex-direction:column;align-items:center;margin-bottom:34px}
+.rd{display:grid;place-items:center;width:220px;height:72px;font-weight:200}
+.rd>*{grid-area:1/1;opacity:0;line-height:1;white-space:nowrap}
+.rd .n{font-size:46px}.rd .m{font-size:30px}.rd .p{font-size:13px;font-weight:300;letter-spacing:.1em}
+.rd.dr .n{animation:rdR 3.4s cubic-bezier(.4,0,.2,1) infinite}
+.rd.dr .m1{animation:rdA 3.4s ease infinite}.rd.dr .m2{animation:rdB 3.4s ease infinite}
+.rd.dl .n{animation:rdL 3.4s cubic-bezier(.4,0,.2,1) infinite}
+.rd.dl .p{animation:rdP 3.4s ease infinite}
+.screen:not(.on) .rd>*{animation-play-state:paused}
+@keyframes rdR{0%{opacity:0;transform:none}10%,38%{opacity:1;transform:none}52%,100%{opacity:0;transform:translateX(64px)}}
+@keyframes rdA{0%,46%{opacity:0;transform:translateX(-26px) scale(.7)}60%,88%{opacity:1;transform:translateX(-26px)}100%{opacity:0;transform:translateX(-26px)}}
+@keyframes rdB{0%,46%{opacity:0;transform:translateX(26px) scale(.7)}60%,88%{opacity:1;transform:translateX(26px)}100%{opacity:0;transform:translateX(26px)}}
+@keyframes rdL{0%{opacity:0;transform:none}10%,38%{opacity:1;transform:none}50%,100%{opacity:0;transform:translateX(-64px)}}
+@keyframes rdP{0%,44%{opacity:0;transform:translateY(8px)}54%{opacity:.6;transform:translateY(-4px)}78%{opacity:.6;transform:translateY(-10px)}92%,100%{opacity:0;transform:translateY(-12px)}}
+.rt{font-size:14px;font-weight:300;letter-spacing:.14em;text-align:center;margin:2px 0 0 .14em}
+.rt small,.rn small{display:block;font-size:9px;font-weight:400;letter-spacing:.22em;opacity:.4;margin-top:7px;text-transform:uppercase}
+.rn{font-size:11px;font-weight:300;letter-spacing:.1em;text-align:center;line-height:1.9;opacity:.6;max-width:320px}
+@media (prefers-reduced-motion:reduce){.rd>*{animation:none!important}.rd .n{opacity:1}}
 .row{display:flex;gap:28px;margin-top:56px}
 </style></head><body>
 
@@ -53,8 +75,19 @@ transition:transform .17s cubic-bezier(.2,.8,.2,1),font-size .17s cubic-bezier(.
  <h1>PRIME</h1><div class="sub">47 SECONDS</div>
  <div class="lab" style="margin:0 0 6px .3em">LEVEL</div><div class="lv" id="lvT" style="margin-bottom:44px"></div>
  <div class="link" id="start">START</div>
- <div class="link" id="sbtn" style="opacity:.5;font-size:10px;margin-top:8px">SCORE</div>
+ <div class="link" id="rbtn" style="opacity:.5;font-size:10px;margin-top:8px">RULE</div>
+ <div class="link" id="sbtn" style="opacity:.5;font-size:10px;margin-top:0">SCORE</div>
 </div>
+
+<div class="screen" id="rule"><div class="rl">
+ <div class="lab">RULE</div>
+ <div class="rg"><div class="rd dr"><span class="n">15</span><span class="m m1">3</span><span class="m m2">5</span></div>
+  <div class="rt">右スワイプ　素数じゃない<small>Swipe right · Not prime</small></div></div>
+ <div class="rg"><div class="rd dl"><span class="n">7</span><span class="p">+7</span></div>
+  <div class="rt">左スワイプ　素数<small>Swipe left · Prime</small></div></div>
+ <div class="rn">素数をすべて集めると得点。ミスは減点。<br>PCは ← → キーでも操作できます。<small>Collect every prime to score. Mistakes cost points. Arrow keys work on PC.</small></div>
+ <div class="link" id="rback" style="margin-top:26px;opacity:.5;font-size:10px">TOP</div>
+</div></div>
 
 <div class="screen" id="game">
  <div class="hud" id="sc">SCORE 0</div><div class="hud" id="cb" style="left:0;right:0;text-align:center;opacity:.5;top:calc(env(safe-area-inset-top,0px) + 42px)"></div><div class="hud" id="tm">00:47</div><div class="hud ui" id="quit">TOP</div>
@@ -109,8 +142,8 @@ function gen(L,rnd,last){
  }
  return last===97?89:97;
 }
-// ミス1回の減点 = そのお題の満点(素数の合計×倍率)× PEN_RATE (1 = 満点ぶん。小さくすると甘く、大きくすると厳しくなる)
-const PEN_RATE=1;
+// ミス1回の減点 = そのお題の満点(素数の合計×倍率)× PEN_RATE (0.33 = 満点の33%。小さくすると甘く、大きくすると厳しくなる)
+const PEN_RATE=0.33;
 const penOf=n=>{let m=n,c=0,s=0;for(const p of P){if(p*p>m)break;while(m%p===0){m/=p;c++;s+=p}}if(m>1){c++;s+=m}return Math.max(1,Math.round(s*mult(c-1)*PEN_RATE))};
 // ops: [[tokenIndex, dir(1|-1), tMs], ...]  -> {score,done,lastT} or null if invalid (ミス操作も記録され、減点される)
 function replay(seed,level,ops){
@@ -241,12 +274,13 @@ gameEl.addEventListener('pointerup',endDrag);gameEl.addEventListener('pointercan
 addEventListener('keydown',e=>{
  if(state==='play'){if(e.key==='Escape')pause();else if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();if(!e.repeat)act(toks[0],e.key==='ArrowRight'?1:-1)}}
  else if(state==='pause'){if(e.key==='Escape'||e.key==='Enter')resume()}
+ else if(state==='rule'){if(e.key==='Escape'||e.key==='Enter'){e.preventDefault();closeRule()}}
  else if(state==='top'&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){LV=Math.min(5,Math.max(1,LV+(e.key==='ArrowRight'?1:-1)));try{localStorage.setItem('prime_lv',LV)}catch(x){}[...$('lvT').children].forEach((c,j)=>c.className=j+1===LV?'on':'')}
  else if(e.key==='Enter'&&!e.repeat&&(state==='top'||state==='end')&&performance.now()-navAt>400)begin();
 });
 addEventListener('resize',layout);
 // ---------- flow ----------
-function show(id){['name','top','game','end','board'].forEach(s=>$(s).classList.toggle('on',s===id))}
+function show(id){['name','top','game','end','board','rule'].forEach(s=>$(s).classList.toggle('on',s===id))}
 const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 async function begin(){
  if(state==='starting'||state==='count')return;const my=++runId;
@@ -331,6 +365,8 @@ function mkLv(el,get,set){el.textContent='';for(let i=1;i<=5;i++){const x=docume
  x.onclick=()=>{set(i);[...el.children].forEach((c,j)=>c.className=j+1===i?'on':'')};el.appendChild(x)}}
 try{LV=Math.min(5,Math.max(1,+localStorage.getItem('prime_lv')||3))}catch(e){}
 mkLv($('lvT'),()=>LV,l=>{LV=l;try{localStorage.setItem('prime_lv',l)}catch(e){}});
+function closeRule(){navAt=performance.now();state='top';show('top')}
+$('rbtn').onclick=()=>{state='rule';show('rule')};$('rback').onclick=closeRule;
 $('sbtn').onclick=openBoard;$('bback').onclick=()=>{state='top';show('top')};
 $('start').onclick=begin;$('retry').onclick=begin;$('home').onclick=()=>{state='top';show('top')};
 </script></body></html>

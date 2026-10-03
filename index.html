@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<script>try{if(localStorage.getItem("prime_theme")==="dark"){document.documentElement.dataset.theme="dark";document.querySelector('meta[name="theme-color"]').content="#000000"}}catch(e){}</script>
 <title>PRIME</title>
 <style>
-:root{--bg:#fff;--fg:#111;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root{--bg:#fff;--fg:#000;--line:rgba(0,0,0,.2);--neg:#c0392b;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root[data-theme="dark"]{--bg:#000;--fg:#fff;--line:rgba(255,255,255,.28);--neg:#ff6b5b;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-html,body{height:100%;margin:0;background:#fff;color:#111;overflow:hidden;overscroll-behavior:none;
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);overflow:hidden;overscroll-behavior:none;
 font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","Segoe UI",system-ui,sans-serif;font-variant-numeric:tabular-nums}
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s}
 .screen.on{opacity:1;pointer-events:auto}
@@ -18,12 +21,12 @@ h1{font-weight:200;font-size:clamp(40px,9vw,84px);letter-spacing:.18em;margin:0 
 .hud{position:absolute;top:calc(env(safe-area-inset-top,0px) + 18px);font-size:11px;letter-spacing:.22em;opacity:.55;pointer-events:none}
 #field{z-index:1}.hud{z-index:3}#cd{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font-weight:200;font-size:clamp(80px,26vw,240px);pointer-events:none}
 #sc{left:22px}#tm{left:0;right:0;text-align:center}#quit{right:14px;cursor:pointer;pointer-events:auto;padding:12px 8px;margin:-12px -8px;top:calc(env(safe-area-inset-top,0px) + 18px);transition:opacity .2s}#quit:hover{opacity:.3}
-#conf{z-index:5;background:#fff;transition:opacity .2s}
+#conf{z-index:5;background:var(--bg);transition:opacity .2s}
 #board{justify-content:flex-start;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 56px) 24px 56px;touch-action:pan-y}
 .bd{width:100%;max-width:420px}.bd .lab{margin:36px 0 14px}.bd .lab:first-child{margin-top:0}
 .r{display:flex;gap:14px;align-items:baseline;font-size:13px;padding:6px 0;font-weight:300}.r em{font-style:normal;opacity:.4;width:28px;font-size:10px;letter-spacing:.1em}.r b{font-weight:300;font-size:18px;flex:1;text-align:right}.r span{opacity:.5;font-size:10px;letter-spacing:.06em}
-#nm{width:min(560px,80vw);background:transparent;border:0;border-bottom:1px solid rgba(0,0,0,.2);outline:0;padding:8px 4px;font:inherit;font-size:18px;letter-spacing:.02em;color:#111;text-align:center;border-radius:0;user-select:text;-webkit-user-select:text}
-#nm::placeholder{color:#111;opacity:.2}
+#nm{width:min(560px,80vw);background:transparent;border:0;border-bottom:1px solid var(--line);outline:0;padding:8px 4px;font:inherit;font-size:18px;letter-spacing:.02em;color:var(--fg);text-align:center;border-radius:0;user-select:text;-webkit-user-select:text}
+#nm::placeholder{color:var(--fg);opacity:.2}
 .r u{text-decoration:none;flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.r b{flex:none!important}
 .nil{font-size:11px;opacity:.4;letter-spacing:.2em}
 #field{position:absolute;inset:0}
@@ -61,6 +64,12 @@ transition:transform .17s cubic-bezier(.2,.8,.2,1),font-size .17s cubic-bezier(.
 .rn{font-size:11px;font-weight:300;letter-spacing:.1em;text-align:center;line-height:1.9;opacity:.6;max-width:320px}
 @media (prefers-reduced-motion:reduce){.rd>*{animation:none!important}.rd .n{opacity:1}}
 .row{display:flex;gap:28px;margin-top:56px}
+/* ---- THEME BUTTON (TOPのみ) ---- */
+#thm{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:14px;width:40px;height:40px;padding:0;display:grid;place-items:center;
+background:transparent;color:inherit;border:1px solid var(--line);border-radius:9px;cursor:pointer;opacity:.5;font:inherit;outline:0;touch-action:manipulation}
+#thm:active{opacity:1}
+#thm svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#thm .moon{display:none}:root[data-theme="dark"] #thm .sun{display:none}:root[data-theme="dark"] #thm .moon{display:block}
 </style></head><body>
 
 <div class="screen on" id="name" style="gap:56px">
@@ -72,6 +81,7 @@ transition:transform .17s cubic-bezier(.2,.8,.2,1),font-size .17s cubic-bezier(.
 
 <div class="screen" id="top">
  <div class="link" id="who" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;font-size:10px;opacity:.4;margin:0"></div>
+ <button id="thm" type="button" aria-label="ライト/ダーク切り替え"><svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></svg><svg class="moon" viewBox="0 0 24 24"><path d="M20.5 13.4A8.6 8.6 0 1 1 10.6 3.5a6.9 6.9 0 0 0 9.9 9.9z"/></svg></button>
  <h1>PRIME</h1><div class="sub">47 SECONDS</div>
  <div class="lab" style="margin:0 0 6px .3em">LEVEL</div><div class="lv" id="lvT" style="margin-bottom:44px"></div>
  <div class="link" id="start">START</div>
@@ -215,7 +225,7 @@ function showToast(h,v,m){
  toast.classList.add('s');clearTimeout(showToast.t);showToast.t=setTimeout(()=>toast.classList.remove('s'),650);
 }
 function pop(t,v,neg){
- const p=document.createElement('div');p.className='pop';p.textContent=(neg?'−':'+')+v;if(neg)p.style.color='#c0392b';
+ const p=document.createElement('div');p.className='pop';p.textContent=(neg?'−':'+')+v;if(neg)p.style.color='var(--neg)';
  p.style.left=Math.max(14,Math.min(field.clientWidth-50,t.x-14))+'px';p.style.top=(t.y-t.s*.75)+'px';field.appendChild(p);
  requestAnimationFrame(()=>{p.style.opacity=.6;p.style.transform='translateY(-12px)'});
  setTimeout(()=>{p.style.opacity=0},350);setTimeout(()=>p.remove(),900);
@@ -368,5 +378,7 @@ mkLv($('lvT'),()=>LV,l=>{LV=l;try{localStorage.setItem('prime_lv',l)}catch(e){}}
 function closeRule(){navAt=performance.now();state='top';show('top')}
 $('rbtn').onclick=()=>{state='rule';show('rule')};$('rback').onclick=closeRule;
 $('sbtn').onclick=openBoard;$('bback').onclick=()=>{state='top';show('top')};
+$('thm').onclick=()=>{const r=document.documentElement,d=r.dataset.theme!=='dark';if(d)r.dataset.theme='dark';else delete r.dataset.theme;
+ document.querySelector('meta[name="theme-color"]').content=d?'#000000':'#ffffff';try{localStorage.setItem('prime_theme',d?'dark':'light')}catch(e){}};
 $('start').onclick=begin;$('retry').onclick=begin;$('home').onclick=()=>{state='top';show('top')};
 </script></body></html>

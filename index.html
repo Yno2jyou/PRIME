@@ -172,9 +172,9 @@ let LV=3,bLV=3,rankP=null,spl=0,rnd=Math.random,seed=0,sid=null,ops=[],lastOp=-1
 // ---------- audio ----------
 let AC,MB;
 function ac(){if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();
- const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=5200;const g=AC.createGain();g.gain.value=.9;
+ const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=5200;const g=AC.createGain();g.gain.value=1.7;const cp=AC.createDynamicsCompressor();cp.threshold.value=-12;cp.knee.value=10;cp.ratio.value=6;cp.attack.value=.003;cp.release.value=.2;
  const dl=AC.createDelay();dl.delayTime.value=.12;const fb=AC.createGain();fb.gain.value=.22;const wet=AC.createGain();wet.gain.value=.22;
- MB=AC.createGain();MB.connect(lp);MB.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(lp);lp.connect(g);g.connect(AC.destination)}return AC}
+ MB=AC.createGain();MB.connect(lp);MB.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(lp);lp.connect(g);g.connect(cp);cp.connect(AC.destination)}return AC}
 const SC=[0,2,4,7,9],note=i=>{i=Math.min(Math.max(i,0),12);return 293.66*Math.pow(2,(12*Math.floor(i/5)+SC[i%5])/12)};
 function tone(f,d,v,at=0,ty='sine',f2){try{const A=ac(),t=A.currentTime+at,o=A.createOscillator(),g=A.createGain();o.type=ty;o.frequency.setValueAtTime(f,t);
  if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);

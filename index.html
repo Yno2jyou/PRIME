@@ -475,7 +475,12 @@ const nm=$('nm');nm.value=PN;
 let navAt=0;
 function goTop(){navAt=performance.now();PN=nm.value.trim().slice(0,12)||'ANON';try{localStorage.setItem('prime_name',PN)}catch(e){}
  $('who').textContent=PN;intro()}
-nm.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();goTop()}});
+let goingTop=0;
+nm.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();if(goingTop)return;
+ const kb=matchMedia('(pointer:coarse)').matches&&document.activeElement===nm;
+ nm.blur(); // モバイル: キーボードを閉じる
+ if(kb){goingTop=1;setTimeout(()=>{goingTop=0;goTop()},350)} // キーボードが閉じ終わってから演出を始める(レイアウトのずれ防止)
+ else goTop()}});
 $('who').onclick=()=>{introStop();state='name';show('name');nm.focus()};
 addEventListener('load',()=>nm.focus());
 function mkLv(el,get,set){el.textContent='';for(let i=1;i<=5;i++){const x=document.createElement('span');x.textContent=i;if(i===get())x.className='on';

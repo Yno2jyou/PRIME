@@ -208,7 +208,7 @@ function intro(){
  const N=pr.reduce((a,b)=>a*b),q=[N];pr.forEach((p,i)=>q.push(q[i]/p));
  field.innerHTML='';toks=[];cd.textContent='';state='intro';gameEl.classList.add('intro');show('game');
  const W=field.clientWidth,H=field.clientHeight,rn=nP+1;
- const s=Math.min(H*.11,W*.12),rh=s*1.5,dw=s*.58,pw=dw*2+s*.6,nw=dw*String(N).length+s*.8,bw=pw+nw,bh=rh*rn;
+ const s=Math.min(H*.11,W*.12),rh=s*1.5,dw=s*.58,pw=dw*Math.max(...pr.map(p=>String(p).length))+s*.6,nw=dw*String(N).length+s*.8,bw=pw+nw,bh=rh*rn;
  const box=document.createElement('div');
  box.style.cssText='position:absolute;left:'+(W-bw)/2+'px;top:'+(H-bh)/2+'px;width:'+bw+'px;height:'+bh+'px;color:var(--fg)';
  field.appendChild(box);

@@ -52,6 +52,12 @@ transition:transform .17s cubic-bezier(.2,.8,.2,1),font-size .17s cubic-bezier(.
 .pop{position:absolute;font-size:13px;letter-spacing:.1em;opacity:0;pointer-events:none;transition:opacity .5s,transform .5s}
 .big{font-weight:200;font-size:clamp(56px,16vw,120px);line-height:1}
 .lab{font-size:10px;letter-spacing:.3em;opacity:.5;margin:0 0 10px .3em}
+/* ---- FRIENDS ---- */
+#vsCode{width:150px;background:transparent;border:0;border-bottom:1px solid var(--line);outline:0;padding:8px 4px;font:inherit;font-size:22px;letter-spacing:.5em;text-indent:.5em;color:var(--fg);text-align:center;border-radius:0;user-select:text;-webkit-user-select:text}
+#vsCode::placeholder{color:var(--fg);opacity:.2;letter-spacing:.3em;font-size:14px}
+#room{justify-content:flex-start;overflow-y:auto;touch-action:pan-y;padding:calc(env(safe-area-inset-top,0px) + 48px) 24px 48px}
+#room .bd{margin:auto}
+.rmsg{font-size:10px;letter-spacing:.22em;opacity:.5;min-height:14px;margin:8px 0}
 /* ---- RULE ---- */
 #rule{justify-content:flex-start;overflow-y:auto;touch-action:pan-y}
 .rl{margin:auto;display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 48px) 24px 48px;width:100%}
@@ -94,7 +100,8 @@ background:transparent;color:inherit;border:1px solid var(--line);border-radius:
  <h1>PRIME</h1><div class="sub">47 SECONDS</div>
  <div class="lab" style="margin:0 0 6px .3em">LEVEL</div><div class="lv" id="lvT" style="margin-bottom:44px"></div>
  <div class="link" id="start">START</div>
- <div class="link" id="rbtn" style="opacity:.5;font-size:10px;margin-top:8px">RULE</div>
+ <div class="link" id="vsbtn" style="opacity:.5;font-size:10px;margin-top:8px">FRIENDS</div>
+ <div class="link" id="rbtn" style="opacity:.5;font-size:10px;margin-top:0">RULE</div>
  <div class="link" id="sbtn" style="opacity:.5;font-size:10px;margin-top:0">SCORE</div>
 </div>
 <div class="screen" id="rule"><div class="rl">
@@ -105,6 +112,26 @@ background:transparent;color:inherit;border:1px solid var(--line);border-radius:
   <div class="rt">左スワイプ　素数<small>Swipe left · Prime</small></div></div>
  <div class="rn">素数をすべて集めると得点。ミスは減点。<br>画面の右半分／左半分をタップしてもOK。<br>PCは ← → キーでも操作できます。<small>Collect every prime to score. Mistakes cost points. Tap the right / left half of the screen, or use arrow keys on PC.</small></div>
  <div class="link" id="rback" style="margin-top:26px;opacity:.5;font-size:10px">TOP</div>
+</div></div>
+<div class="screen" id="vs"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center">
+ <h1 style="margin-bottom:44px">PRIME</h1>
+ <div class="lab" style="margin-bottom:4px">LEVEL</div><div class="lv" id="vsLv" style="margin-bottom:10px"></div>
+ <div class="link" id="vsNew">CREATE ROOM</div>
+ <div class="lab" style="margin:22px 0 6px;opacity:.3">OR</div>
+ <input id="vsCode" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="CODE">
+ <div class="link" id="vsJoin">JOIN</div>
+ <div class="rmsg" id="vsMsg"></div>
+ <div class="link" id="vsBack" style="opacity:.5;font-size:10px">TOP</div>
+</div></div>
+<div class="screen" id="room"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center">
+ <div class="lab">ROOM</div><div class="big" id="rmCode" style="letter-spacing:.12em;margin-left:.12em">----</div>
+ <div class="lab" id="rmLv" style="margin:12px 0 22px">&nbsp;</div>
+ <div class="link" id="rmPlay">PLAY</div>
+ <div class="link" id="rmShare" style="opacity:.5;font-size:10px">SHARE</div>
+ <div class="rmsg" id="rmMsg"></div>
+ <div class="lab" id="rmRes" style="margin:22px 0 8px">RESULTS</div>
+ <div id="rmList" style="width:100%;text-align:left"></div>
+ <div class="link" id="rmBack" style="opacity:.5;font-size:10px;margin-top:30px">TOP</div>
 </div></div>
 <div class="screen" id="game">
  <div class="hud" id="sc">SCORE 0</div><div class="hud" id="cb" style="left:0;right:0;text-align:center;opacity:.5;top:calc(env(safe-area-inset-top,0px) + 42px)"></div><div class="hud" id="tm">00:47</div><div class="hud ui" id="quit">TOP</div>
@@ -134,6 +161,7 @@ const LV_MAP=[1,3,6,8,10];
 const LV_MAXN=[99,300,999,3000,9999,30000,99999,300000,999999,9999999];
 const LV_K=[[2,3],[2,4],[2,5],[3,6],[3,7],[4,8],[5,10],[5,11],[6,12],[7,14]];
 function mulberry32(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const sr=(seed,n,r)=>mulberry32((seed^Math.imul(n|0,0x9E3779B1)^Math.imul(r+1,0x85EBCA6B))>>>0);
 function split(n,rnd){
  const f=[];let m=n;for(const p of P){if(p*p>m)break;if(m%p===0){let e=0;while(m%p===0){m/=p;e++}f.push([p,e])}}
  if(m>1)f.push([m,1]);
@@ -167,15 +195,15 @@ function replay(seed,level,ops){
   if(!Array.isArray(o))return null;const [idx,dir,t]=o;
   if(!Number.isInteger(idx)||!Number.isInteger(t)||t<0||t>=DUR||t-prev<MINGAP)return null;
   prev=lastT=t;const k=toks[idx];if(!k)return null;
-  if(dir===1){if(isP(k.n)){score-=pen;cl=0;continue}const [a,b]=split(k.n,rnd);toks.splice(idx,1,{n:a,d:k.d+1},{n:b,d:k.d+1});spl++}
+  if(dir===1){if(isP(k.n)){score-=pen;cl=0;continue}const [a,b]=split(k.n,sr(seed,k.n,done));toks.splice(idx,1,{n:a,d:k.d+1},{n:b,d:k.d+1});spl++}
   else if(dir===-1){if(!isP(k.n)){score-=pen;cl=0;continue}cur+=pv(k.n,level);toks.splice(idx,1);if(!toks.length){score+=Math.round(cur*mult(spl)*(cl?CLEAN_BONUS:1));done++;spawn()}}
   else return null;
  }
  return{score,done,lastT};
 }
 // ===== core end =====
-if(typeof module!=='undefined')module.exports={mult,DUR,MINGAP,replay,mulberry32,gen,split,isP,penOf,pv,CLEAN_BONUS};
-let LV=3,bLV=3,rankP=null,spl=0,rnd=Math.random,seed=0,sid=null,ops=[],lastOp=-1e9,last=0,pen=0;
+if(typeof module!=='undefined')module.exports={mult,DUR,MINGAP,replay,mulberry32,gen,split,isP,penOf,pv,CLEAN_BONUS,sr};
+let LV=1,bLV=1,roomT=0,LVkeep=0,roomCtx=null,urlRoom=(new URLSearchParams(location.search).get('room')||'').replace(/\D/g,'').slice(0,4),rankP=null,spl=0,rnd=Math.random,seed=0,sid=null,ops=[],lastOp=-1e9,last=0,pen=0;
 // ---------- audio ----------
 let AC,MB;
 function ac(){if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();
@@ -337,7 +365,7 @@ function act(t,dir){
  const prime=isP(t.n);
  if(dir>0){
   if(prime)return miss(t,dir,T);
-  const idx=toks.indexOf(t);ops.push([idx,1,T]);lastOp=T;const [a,b]=split(t.n,rnd);spl++;st.sp++;st.mc=Math.max(st.mc,spl);{const m=mult(spl);$('cb').textContent='COMBO '+spl+'  ×'+m}t.gone=1;
+  const idx=toks.indexOf(t);ops.push([idx,1,T]);lastOp=T;const [a,b]=split(t.n,sr(seed,t.n,done));spl++;st.sp++;st.mc=Math.max(st.mc,spl);{const m=mult(spl);$('cb').textContent='COMBO '+spl+'  ×'+m}t.gone=1;
   t.el.remove();toks.splice(idx,1);
   const A=mk(a,t.d+1,t.x,t.y),B=mk(b,t.d+1,t.x,t.y);toks.pop();toks.pop();toks.splice(idx,0,A,B);
   [A,B].forEach(z=>{z.el.style.transform=`translate(${t.x-t.w/2}px,${t.y-t.s/2}px)`;z.el.style.fontSize=t.s+'px';z.el.style.width=t.w+'px'});
@@ -391,21 +419,23 @@ addEventListener('keydown',e=>{
  if(state==='play'){if(e.key==='Escape')pause();else if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();if(!e.repeat)act(toks[0],e.key==='ArrowRight'?1:-1)}}
  else if(state==='pause'){if(e.key==='Escape'||e.key==='Enter')resume()}
  else if(state==='rule'){if(e.key==='Escape'||e.key==='Enter'){e.preventDefault();closeRule()}}
- else if(state==='top'&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){LV=Math.min(5,Math.max(1,LV+(e.key==='ArrowRight'?1:-1)));try{localStorage.setItem('prime_lv',LV)}catch(x){}[...$('lvT').children].forEach((c,j)=>c.className=j+1===LV?'on':'')}
+ else if(state==='top'&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){LV=Math.min(5,Math.max(1,LV+(e.key==='ArrowRight'?1:-1)));[...$('lvT').children].forEach((c,j)=>c.className=j+1===LV?'on':'')}
  else if(state==='intro'&&!e.repeat&&performance.now()-navAt>400)introEnd();
- else if(e.key==='Enter'&&!e.repeat&&(state==='top'||state==='end')&&performance.now()-navAt>400)begin();
+ else if((state==='vs'||state==='room')&&e.key==='Escape'){state='top';show('top')}
+  else if(e.key==='Enter'&&!e.repeat&&(state==='top'||state==='end')&&performance.now()-navAt>400)(roomCtx&&state==='end'?backToRoom():begin());
 });
 addEventListener('resize',layout);
 // ---------- flow ----------
-function show(id,q){['name','top','game','end','board','rule'].forEach(s=>{const e=$(s),on=s===id;
- if(q&&!on&&e.classList.contains('on')){e.style.transition='none';e.classList.remove('on');void e.offsetWidth;e.style.transition=''}else e.classList.toggle('on',on)})}
+function show(id,q){['name','top','game','end','board','rule','vs','room'].forEach(s=>{const e=$(s),on=s===id;
+ if(q&&!on&&e.classList.contains('on')){e.style.transition='none';e.classList.remove('on');void e.offsetWidth;e.style.transition=''}else e.classList.toggle('on',on)});showHook(id)}
 const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
-async function begin(){
+async function begin(rm){
  if(state==='starting'||state==='count')return;const my=++runId;introStop();
  ac();AC.resume&&AC.resume();
+ roomCtx=rm||null;if(rm){if(!LVkeep)LVkeep=LV;LV=rm.level}else if(LVkeep){LV=LVkeep;LVkeep=0}
  state='starting';field.innerHTML='';toks=[];score=0;done=0;cur=0;busy=false;last=0;ops=[];lastOp=-1e9;sid=null;rankP=null;st={sp:0,pr:0,mi:0,mc:0,bn:0,pn:0};
  $('sc').textContent='SCORE 0';$('tm').textContent='00:47';toast.classList.remove('s');show('game');
- try{const r=await call('start',{level:LV});sid=r.id;seed=r.seed>>>0}catch(e){seed=(Math.random()*4294967296)>>>0}
+ if(rm){sid=rm.id;seed=rm.seed>>>0}else try{const r=await call('start',{level:LV});sid=r.id;seed=r.seed>>>0}catch(e){seed=(Math.random()*4294967296)>>>0}
  if(runId!==my)return;rnd=mulberry32(seed);if(state==='pause')pState='count';else state='count';
  for(const c of ['3','2','1']){cd.textContent=c;cd.animate([{opacity:0,transform:'scale(1.15)'},{opacity:1,transform:'none'}],{duration:200,easing:'ease-out'});bell(note(4),.09);if(!await hold(700,my))return}
  cd.style.cssText='font-size:clamp(34px,10vw,64px);letter-spacing:.22em;padding-left:.22em';cd.textContent='START';
@@ -442,10 +472,10 @@ function skipReveal(){if(!revT.length)return;revT.forEach(clearTimeout);revT=[];
 $('end').addEventListener('click',skipReveal);
 function showStats(){
  const h=st.sp+st.pr,acc=h+st.mi?Math.round(h/(h+st.mi)*100):0;
- const L=[['PRIME COMPLETE',done],['MAX COMBO',st.mc],['BEST NUMBER',st.bn],['SPLITS',st.sp],['PRIMES',st.pr],['MISSES',st.mi],['PENALTY',st.pn?'−'+st.pn:'0'],['ACCURACY',acc+'%'],['WORLD RANK',rankP?'…':'—']];
- $('rl').textContent='LEVEL '+LV+'  SCORE';const el=$('stats');el.textContent='';
+ const L=[['PRIME COMPLETE',done],['MAX COMBO',st.mc],['BEST NUMBER',st.bn],['SPLITS',st.sp],['PRIMES',st.pr],['MISSES',st.mi],['PENALTY',st.pn?'−'+st.pn:'0'],['ACCURACY',acc+'%'],[roomCtx?'ROOM RANK':'WORLD RANK',rankP?'…':'—']];
+ $('rl').textContent=(roomCtx?'ROOM '+roomCtx.code+'  ':'')+'LEVEL '+LV+'  SCORE';$('retry').textContent=roomCtx?'ROOM':'RETRY';const el=$('stats');el.textContent='';
  L.forEach(([k,v])=>{const r=document.createElement('div');r.className='r';const a=document.createElement('em');a.style.width='auto';a.style.flex='1';a.textContent=k;const b=document.createElement('b');b.style.fontSize='15px';b.textContent=v;r.append(a,b);el.appendChild(r)});
- const wr=el.lastChild.querySelector('b');if(rankP)rankP.then(x=>{wr.textContent=x&&x.rank?'#'+x.rank:'—'}).catch(()=>{wr.textContent='—'});
+ const wr=el.lastChild.querySelector('b');if(rankP)rankP.then(x=>{wr.textContent=x&&x.rank?'#'+x.rank+(x.total?' / '+x.total:''):'—'}).catch(()=>{wr.textContent='—'});
 }
 // ---------- pause ----------
 let pAt=0,runId=0,pState='play';const cd=$('cd'),sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -471,9 +501,9 @@ let PN=(()=>{try{return localStorage.getItem('prime_name')||''}catch(e){return''
 const LK=l=>'prime47_best_'+l;
 const loadMine=l=>{try{return JSON.parse(localStorage.getItem(LK(l)))||[]}catch(e){return[]}};
 function submit(){
- if(score<=0)return;const ts=Date.now();
- try{const a=loadMine(LV);a.push({s:score,t:ts,n:PN});a.sort((x,y)=>y.s-x.s);localStorage.setItem(LK(LV),JSON.stringify(a.slice(0,5)))}catch(e){}
- if(sid){const id=sid;sid=null;rankP=call('submit',{id,name:PN,ops}).then(x=>{remember(x.id);return x});rankP.catch(()=>{})}
+ if(!roomCtx&&score<=0)return;const ts=Date.now();
+ if(!roomCtx)try{const a=loadMine(LV);a.push({s:score,t:ts,n:PN});a.sort((x,y)=>y.s-x.s);localStorage.setItem(LK(LV),JSON.stringify(a.slice(0,5)))}catch(e){}
+ if(sid){const id=sid;sid=null;rankP=roomCtx?call('room/submit',{id,cid:CID,name:PN,ops}):call('submit',{id,name:PN,ops}).then(x=>{remember(x.id);return x});rankP.catch(()=>{})}
 }
 const fd=t=>{const d=new Date(t),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())};
 function rows(el,list){
@@ -507,8 +537,7 @@ $('who').onclick=()=>{introStop();state='name';show('name');nm.focus()};
 addEventListener('load',()=>nm.focus());
 function mkLv(el,get,set){el.textContent='';for(let i=1;i<=5;i++){const x=document.createElement('span');x.textContent=i;if(i===get())x.className='on';
  x.onclick=()=>{set(i);[...el.children].forEach((c,j)=>c.className=j+1===i?'on':'')};el.appendChild(x)}}
-try{LV=Math.min(5,Math.max(1,+localStorage.getItem('prime_lv')||3))}catch(e){}
-mkLv($('lvT'),()=>LV,l=>{LV=l;try{localStorage.setItem('prime_lv',l)}catch(e){}});
+function refreshLvT(){mkLv($('lvT'),()=>LV,l=>{LV=l})}refreshLvT();
 function closeRule(){navAt=performance.now();state='top';show('top')}
 $('rbtn').onclick=()=>{state='rule';show('rule')};$('rback').onclick=closeRule;
 $('sbtn').onclick=openBoard;$('bback').onclick=()=>{state='top';show('top')};
@@ -520,5 +549,55 @@ $('sbtn').onclick=openBoard;$('bback').onclick=()=>{state='top';show('top')};
  thm.addEventListener('click',e=>{if(e.detail===0)setTheme(!dark)});
  thm.addEventListener('keydown',e=>e.stopPropagation());
 }
-$('start').onclick=begin;$('retry').onclick=begin;$('home').onclick=()=>{state='top';show('top')};
+// ---------- FRIENDS: 同じ数字で対戦 ----------
+const CID=(()=>{try{let c=localStorage.getItem('prime_cid');if(!c){c=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,'0')).join('');localStorage.setItem('prime_cid',c)}return c}catch(e){return Array.from({length:24},()=>(Math.random()*16|0).toString(16)).join('')}})();
+async function get(p){const r=await fetch(API+'/api/'+p,{cache:'no-store'});if(!r.ok){const e=new Error('http');e.code=r.status;throw e}return r.json()}
+let RM=null,rmBusy=0;
+const vsMsg=t=>{$('vsMsg').textContent=t||''},rmMsg=t=>{$('rmMsg').textContent=t||''};
+function showHook(id){
+ if(id!=='room')clearInterval(roomT);
+ if(id==='top'){if(LVkeep){LV=LVkeep;LVkeep=0}refreshLvT();
+  if(urlRoom){const c=urlRoom;urlRoom='';try{history.replaceState(null,'',location.pathname)}catch(e){}setTimeout(()=>{if(state==='top')openRoom(c)},350)}}
+}
+function openVs(){state='vs';vsMsg('');mkLv($('vsLv'),()=>LV,l=>{LV=l});show('vs')}
+function openRoom(code,level){
+ RM={code,level:level||0,played:false};state='room';show('room');
+ $('rmCode').textContent=code;$('rmLv').textContent=level?'LEVEL '+level:'\u00a0';$('rmList').innerHTML='<div class="nil">…</div>';$('rmRes').textContent='RESULTS';
+ rmMsg('');$('rmPlay').style.display='';loadRoom();clearInterval(roomT);roomT=setInterval(()=>{if(state==='room')loadRoom()},4000);
+}
+async function loadRoom(){
+ const r0=RM;if(!r0)return;
+ try{
+  const d=await get('room/info?code='+r0.code+'&cid='+CID);if(RM!==r0||state!=='room')return;
+  r0.level=d.level;r0.played=d.played;$('rmLv').textContent='LEVEL '+d.level;
+  $('rmPlay').style.display=d.played?'none':'';rmMsg(d.played?(d.submitted?'PLAYED':'ONE RUN EACH · NOT FINISHED'):'');
+  $('rmRes').textContent='RESULTS  '+d.list.length+' / '+d.joined;
+  rows($('rmList'),d.list.map(x=>({me:x.me,n:String(x.n).slice(0,12),s:x.s,t:x.t})));
+ }catch(e){
+  if(RM!==r0||state!=='room')return;
+  if(e&&e.code===404){state='vs';show('vs');vsMsg('NO ROOM')}else rmMsg('OFFLINE'+(e&&e.code?' · '+e.code:''));
+ }
+}
+function backToRoom(){if(roomCtx)openRoom(roomCtx.code,roomCtx.level);else{state='top';show('top')}}
+$('vsbtn').onclick=openVs;$('vsBack').onclick=()=>{state='top';show('top')};
+$('vsNew').onclick=async()=>{
+ if(rmBusy)return;rmBusy=1;vsMsg('…');
+ try{const r=await call('room/create',{level:LV});rmBusy=0;vsMsg('');openRoom(r.code,r.level)}
+ catch(e){rmBusy=0;vsMsg('OFFLINE'+(e&&e.code?' · '+e.code:''))}
+};
+function joinCode(){const c=$('vsCode').value.replace(/\D/g,'').slice(0,4);if(c.length<4){vsMsg('4 DIGITS');return}$('vsCode').blur();$('vsCode').value='';openRoom(c)}
+$('vsJoin').onclick=joinCode;
+$('vsCode').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&!e.isComposing){e.preventDefault();joinCode()}});
+$('vsCode').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,4)});
+$('rmPlay').onclick=async()=>{
+ if(!RM||RM.played||rmBusy)return;rmBusy=1;rmMsg('…');
+ try{const r=await call('room/join',{code:RM.code,cid:CID,name:PN});rmBusy=0;rmMsg('');clearInterval(roomT);begin({code:RM.code,level:r.level,id:r.id,seed:r.seed})}
+ catch(e){rmBusy=0;rmMsg(e&&e.code===409?'PLAYED':e&&e.code===403?'ROOM FULL':e&&e.code===404?'NO ROOM':'OFFLINE'+(e&&e.code?' · '+e.code:''));if(e&&e.code===409)loadRoom()}
+};
+$('rmShare').onclick=async()=>{
+ if(!RM)return;const u=/^https?:/.test(location.protocol)?location.origin+location.pathname+'?room='+RM.code:RM.code,t='PRIME  ROOM '+RM.code;
+ try{if(navigator.share){await navigator.share({title:'PRIME',text:t,url:u})}else{await navigator.clipboard.writeText(t+'\n'+u);rmMsg('COPIED')}}catch(e){}
+};
+$('rmBack').onclick=()=>{state='top';show('top')};
+$('start').onclick=()=>begin();$('retry').onclick=()=>roomCtx?backToRoom():begin();$('home').onclick=()=>{state='top';show('top')};
 </script></body></html>

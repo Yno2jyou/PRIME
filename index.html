@@ -564,7 +564,7 @@ function showHook(id){
 function openVs(){state='vs';vsMsg('');mkLv($('vsLv'),()=>LV,l=>{LV=l});show('vs')}
 function openRoom(code,level){
  RM={code,level:level||0,played:false};state='room';show('room');
- $('rmCode').textContent=code;$('rmLv').textContent=level?'LEVEL '+level:'\u00a0';$('rmList').innerHTML='<div class="nil">…</div>';$('rmRes').textContent='RESULTS';
+ $('rmCode').textContent=code;$('rmLv').textContent=level?'LEVEL '+level:'\u00a0';$('rmList').innerHTML='';$('rmRes').textContent='RESULTS';
  rmMsg('');$('rmPlay').style.display='none';$('rmStart').style.display='none';loadRoom();clearInterval(roomT);roomT=setInterval(()=>{if(state==='room')loadRoom()},1500);
 }
 async function loadRoom(){
@@ -572,13 +572,14 @@ async function loadRoom(){
  try{
   const t1=Date.now(),d=await get('room/info?code='+r0.code+'&cid='+CID),t2=Date.now();if(RM!==r0||state!=='room')return;
   const at=d.startAt?d.startAt-(d.now-(t1+t2)/2):0; // 開始時刻を自分の端末の時計に換算
-  r0.level=d.level;r0.played=d.played;$('rmLv').textContent='LEVEL '+d.level;
+  r0.level=d.level;$('rmLv').textContent='LEVEL '+d.level;
   $('rmRes').textContent='RESULTS  '+d.list.length+' / '+d.joined;
-  rows($('rmList'),d.list.map(x=>({me:x.me,n:String(x.n).slice(0,12),s:x.s,t:x.t})));
-  if(!d.played&&at&&Date.now()<at+1500&&!rmBusy){joinRoom(at);return} // 開始直後 → 自動で参加してカウントダウンへ
-  $('rmStart').style.display=(!d.startAt&&d.host)?'':'none';
-  $('rmPlay').style.display=(!d.played&&d.startAt)?'':'none';
-  rmMsg(d.played?(d.submitted?'PLAYED':'ONE RUN EACH · NOT FINISHED'):!d.startAt?(d.host?'':'WAITING FOR HOST…'):'');
+  if(d.list.length)rows($('rmList'),d.list.map(x=>({me:x.me,n:String(x.n).slice(0,12),s:x.s,t:x.t})));else $('rmList').innerHTML='';
+  if(!d.inRound&&at&&Date.now()<at+1500&&!rmBusy){joinRoom(at);return} // 新ラウンド開始直後 → 自動で参加してカウントダウンへ
+  $('rmStart').style.display=d.host?'':'none';
+  $('rmStart').textContent=d.startAt?'NEW ROUND':'START';
+  $('rmPlay').style.display=d.startAt?'':'none';
+  rmMsg(!d.startAt&&!d.host?'WAITING FOR HOST…':'');
  }catch(e){
   if(RM!==r0||state!=='room')return;
   if(e&&e.code===404){state='vs';show('vs');vsMsg('NO ROOM')}else rmMsg('OFFLINE'+(e&&e.code?' · '+e.code:''));
@@ -596,9 +597,9 @@ $('vsJoin').onclick=joinCode;
 $('vsCode').addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'&&!e.isComposing){e.preventDefault();joinCode()}});
 $('vsCode').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,4)});
 async function joinRoom(at){
- if(!RM||RM.played||rmBusy)return;rmBusy=1;rmMsg('…');
- try{const r=await call('room/join',{code:RM.code,cid:CID,name:PN});rmBusy=0;rmMsg('');clearInterval(roomT);begin({code:RM.code,level:r.level,id:r.id,seed:r.seed,at:at||0})}
- catch(e){rmBusy=0;rmMsg(e&&e.code===409?'PLAYED':e&&e.code===403?'ROOM FULL':e&&e.code===404?'NO ROOM':e&&e.code===425?'WAITING FOR HOST…':'OFFLINE'+(e&&e.code?' · '+e.code:''));if(e&&e.code===409)loadRoom()}
+ if(!RM||rmBusy)return;rmBusy=1;rmMsg('…');
+ try{const r=await call('room/join',{code:RM.code,cid:CID,name:PN});rmBusy=0;rmMsg('');clearInterval(roomT);begin({code:RM.code,level:r.level,id:r.id,seed:r.seed,at:(r.sync&&at)||0})}
+ catch(e){rmBusy=0;rmMsg(e&&e.code===429?'RUN LIMIT':e&&e.code===403?'ROOM FULL':e&&e.code===404?'NO ROOM':e&&e.code===425?'WAITING FOR HOST…':'OFFLINE'+(e&&e.code?' · '+e.code:''))}
 }
 $('rmPlay').onclick=()=>joinRoom(0);
 $('rmStart').onclick=async()=>{

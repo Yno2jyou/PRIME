@@ -350,7 +350,7 @@ function act(t,dir){
    done++;busy=true;
    const m=mult(spl);st.bn=Math.max(st.bn,cur*m);score+=cur*m;$('sc').textContent='SCORE '+score;$('cb').textContent='';
    showToast(t.d===0?'PRIME':'PRIME COMPLETE',cur*m,m);
-   if(t.d>0){if(clean)nofan();else [1,3,5].forEach((k,i)=>bell(note(ch+k),.06,.08+i*.07))}
+   if(clean)nofan();else if(t.d>0)[1,3,5].forEach((k,i)=>bell(note(ch+k),.06,.08+i*.07))
    setTimeout(()=>{if(state==='play')spawn(T)},t.d===0?220:380);
   }
  }

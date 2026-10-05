@@ -103,7 +103,7 @@ background:transparent;color:inherit;border:1px solid var(--line);border-radius:
   <div class="rt">右スワイプ　素数じゃない<small>Swipe right · Not prime</small></div></div>
  <div class="rg"><div class="rd dl"><span class="n">7</span><span class="p">+7</span></div>
   <div class="rt">左スワイプ　素数<small>Swipe left · Prime</small></div></div>
- <div class="rn">素数をすべて集めると得点。ミスは減点。<br>PCは ← → キーでも操作できます。<small>Collect every prime to score. Mistakes cost points. Arrow keys work on PC.</small></div>
+ <div class="rn">素数をすべて集めると得点。ミスは減点。<br>画面の右半分／左半分をタップしてもOK。PCは ← → キーでも操作できます。<small>Collect every prime to score. Mistakes cost points. Tap the right / left half of the screen, or use arrow keys on PC.</small></div>
  <div class="link" id="rback" style="margin-top:26px;opacity:.5;font-size:10px">TOP</div>
 </div></div>
 <div class="screen" id="game">
@@ -362,15 +362,27 @@ gameEl.addEventListener('pointerdown',e=>{
  if(e.target.closest('.ui')||state!=='play'||busy||!toks.length)return;
  const r=field.getBoundingClientRect();let best=null,bd=1e9;
  toks.forEach(t=>{const d=Math.hypot(t.x-(e.clientX-r.left),(t.y-(e.clientY-r.top))*.6);if(d<bd){bd=d;best=t}});
- drag={t:best,sx:e.clientX,id:e.pointerId};best.i.style.transition='none';gameEl.setPointerCapture(e.pointerId);
+ drag={t:best,sx:e.clientX,sy:e.clientY,id:e.pointerId,mv:0};best.i.style.transition='none';gameEl.setPointerCapture(e.pointerId);
 });
 gameEl.addEventListener('pointermove',e=>{
  if(!drag)return;const dx=e.clientX-drag.sx,T=Math.min(70,field.clientWidth*.14),t=drag.t;
+ if(Math.abs(dx)>10||Math.abs(e.clientY-drag.sy)>10)drag.mv=1;
  t.i.style.transform=`translateX(${dx*.8}px)`;t.i.style.opacity=1-Math.min(.5,Math.abs(dx)/400);
  if(Math.abs(dx)>=T){drag=null;t.i.style.transition='';t.i.style.opacity='';t.i.style.transform='';act(t,dx>0?1:-1)}
 });
 const endDrag=()=>{if(!drag)return;const t=drag.t;drag=null;t.i.style.transition='transform .18s cubic-bezier(.2,.8,.2,1),opacity .18s';t.i.style.transform='';t.i.style.opacity=''};
-gameEl.addEventListener('pointerup',endDrag);gameEl.addEventListener('pointercancel',endDrag);
+// タップ操作: 画面の右半分=素数じゃない(分解) / 左半分=素数(回収)。PCの←→キーと同じく先頭の数が対象
+gameEl.addEventListener('pointerup',e=>{
+ const d=drag;
+ if(d&&!d.mv&&e.pointerId===d.id){
+  const r=gameEl.getBoundingClientRect(),dir=e.clientX>r.left+r.width/2?1:-1,t=toks[0];
+  endDrag();
+  if(t)act(t,dir);
+  return;
+ }
+ endDrag();
+});
+gameEl.addEventListener('pointercancel',endDrag);
 addEventListener('keydown',e=>{
  if(state==='play'){if(e.key==='Escape')pause();else if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();if(!e.repeat)act(toks[0],e.key==='ArrowRight'?1:-1)}}
  else if(state==='pause'){if(e.key==='Escape'||e.key==='Enter')resume()}

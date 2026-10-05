@@ -100,10 +100,10 @@ background:transparent;color:inherit;border:1px solid var(--line);border-radius:
 <div class="screen" id="rule"><div class="rl">
  <div class="lab">RULE</div>
  <div class="rg"><div class="rd dr"><span class="n">15</span><span class="m m1">3</span><span class="m m2">5</span></div>
-  <div class="rt">右スワイプ　素数じゃない<small>Swipe right · Not prime</small></div></div>
+  <div class="rt">右スワイプ　素数ではない<small>Swipe right · Not prime</small></div></div>
  <div class="rg"><div class="rd dl"><span class="n">7</span><span class="p">+7</span></div>
   <div class="rt">左スワイプ　素数<small>Swipe left · Prime</small></div></div>
- <div class="rn">素数をすべて集めると得点。ミスは減点。<br>画面の右半分／左半分をタップしてもOK。PCは ← → キーでも操作できます。<small>Collect every prime to score. Mistakes cost points. Tap the right / left half of the screen, or use arrow keys on PC.</small></div>
+ <div class="rn">素数をすべて集めると得点。ミスは減点。<br>画面の右半分／左半分をタップしてもOK。<br>PCは ← → キーでも操作できます。<small>Collect every prime to score. Mistakes cost points. Tap the right / left half of the screen, or use arrow keys on PC.</small></div>
  <div class="link" id="rback" style="margin-top:26px;opacity:.5;font-size:10px">TOP</div>
 </div></div>
 <div class="screen" id="game">
@@ -155,25 +155,26 @@ function gen(L,rnd,last){
  }
  return last===97?89:97;
 }
-const PEN_RATE=0.33;
-const penOf=n=>{let m=n,c=0,s=0;for(const p of P){if(p*p>m)break;while(m%p===0){m/=p;c++;s+=p}}if(m>1){c++;s+=m}return Math.max(1,Math.round(s*mult(c-1)*PEN_RATE))};
+const PEN_RATE=0.33,CLEAN_BONUS=1.5,PCAP=[100,300,900,1600,2900];
+const pv=(p,L)=>Math.min(p,PCAP[L-1]);
+const penOf=(n,L)=>{let m=n,c=0,s=0;for(const p of P){if(p*p>m)break;while(m%p===0){m/=p;c++;s+=pv(p,L)}}if(m>1){c++;s+=pv(m,L)}return Math.max(1,Math.round(s*mult(c-1)*PEN_RATE))};
 function replay(seed,level,ops){
  if(!Number.isInteger(level)||level<1||level>5||!Array.isArray(ops)||ops.length>3000)return null;
- const rnd=mulberry32(seed);let last=0,score=0,done=0,toks=[],prev=-1e9,lastT=0,cur=0,spl=0,pen=0;
- const spawn=()=>{last=gen(level,rnd,last);toks=[{n:last,d:0}];cur=0;spl=0;pen=penOf(last)};
+ const rnd=mulberry32(seed);let last=0,score=0,done=0,toks=[],prev=-1e9,lastT=0,cur=0,spl=0,pen=0,cl=1;
+ const spawn=()=>{last=gen(level,rnd,last);toks=[{n:last,d:0}];cur=0;spl=0;pen=penOf(last,level);cl=1};
  spawn();
  for(const o of ops){
   if(!Array.isArray(o))return null;const [idx,dir,t]=o;
   if(!Number.isInteger(idx)||!Number.isInteger(t)||t<0||t>=DUR||t-prev<MINGAP)return null;
   prev=lastT=t;const k=toks[idx];if(!k)return null;
-  if(dir===1){if(isP(k.n)){score-=pen;continue}const [a,b]=split(k.n,rnd);toks.splice(idx,1,{n:a,d:k.d+1},{n:b,d:k.d+1});spl++}
-  else if(dir===-1){if(!isP(k.n)){score-=pen;continue}cur+=k.n;toks.splice(idx,1);if(!toks.length){score+=cur*mult(spl);done++;spawn()}}
+  if(dir===1){if(isP(k.n)){score-=pen;cl=0;continue}const [a,b]=split(k.n,rnd);toks.splice(idx,1,{n:a,d:k.d+1},{n:b,d:k.d+1});spl++}
+  else if(dir===-1){if(!isP(k.n)){score-=pen;cl=0;continue}cur+=pv(k.n,level);toks.splice(idx,1);if(!toks.length){score+=Math.round(cur*mult(spl)*(cl?CLEAN_BONUS:1));done++;spawn()}}
   else return null;
  }
  return{score,done,lastT};
 }
 // ===== core end =====
-if(typeof module!=='undefined')module.exports={mult,DUR,MINGAP,replay,mulberry32,gen,split,isP,penOf};
+if(typeof module!=='undefined')module.exports={mult,DUR,MINGAP,replay,mulberry32,gen,split,isP,penOf,pv,CLEAN_BONUS};
 let LV=3,bLV=3,rankP=null,spl=0,rnd=Math.random,seed=0,sid=null,ops=[],lastOp=-1e9,last=0,pen=0;
 // ---------- audio ----------
 let AC,MB;
@@ -182,6 +183,7 @@ function ac(){if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();
  const dl=AC.createDelay();dl.delayTime.value=.12;const fb=AC.createGain();fb.gain.value=.22;const wet=AC.createGain();wet.gain.value=.22;
  MB=AC.createGain();MB.connect(lp);MB.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(lp);lp.connect(g);g.connect(cp);cp.connect(AC.destination)}return AC}
 const SC=[0,2,4,7,9],note=i=>{i=Math.min(Math.max(i,0),12);return 293.66*Math.pow(2,(12*Math.floor(i/5)+SC[i%5])/12)};
+const pit=(c,k)=>note(c+k);
 function tone(f,d,v,at=0,ty='sine',f2){try{const A=ac(),t=A.currentTime+at,o=A.createOscillator(),g=A.createGain();o.type=ty;o.frequency.setValueAtTime(f,t);
  if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+d);
@@ -274,7 +276,9 @@ function fan(i=THEME,dl=0,sc=1,abs){try{const F=FANS[i-1],A=ac();A.resume&&A.res
  F.s.forEach(([b,m,l,g=1])=>{const a=[].concat(m);a.forEach(x=>voice(x,t+b*s,l*s,F.v*g/Math.sqrt(a.length),F.w,F.sus,F.bell))})}catch(e){}}
 const SCTHEME=1; // スコア表示の効果音(1〜15)
 const SCFANS=[{"n":"明けの鐘","d":"D・A・D・F#と鐘が上り、大きな和音で包む","w":"sine","v":0.09,"bpm":150,"sus":0.2,"bell":1,"s":[[0,62,3],[1,69,3],[2,74,3],[3,78,3],[4,[50,62,69,74,78,81],6]]},{"n":"素数ハープ昇り","d":"五音音階の2・3・5・7・11・13番目を昇り、和音へ","w":"sine","v":0.07,"bpm":150,"sus":0.1,"bell":1,"s":[[0,52,3],[0.8,54,3],[1.6,59,3],[2.4000000000000004,64,3],[3.2,74,3],[4,78,3],[5,[50,62,69,74,78],6]]},{"n":"3:2積み上げ(長)","d":"純正5度を4回積み、ゆっくりDに着地","w":"sine","v":0.08,"bpm":150,"sus":0.2,"bell":1,"s":[[0,50,4],[1,57.02,4],[2,64.04,4],[3,71.06,4],[4.5,[50,62,69,74,78],6]]},{"n":"オルゴール","d":"小さな旋律が上って降りる。終わりに和音のきらめき","w":"triangle","v":0.1,"bpm":200,"sus":0.03,"s":[[0,74,3],[1,78,3],[2,81,3],[3,86,3],[4,81,3],[5,78,3],[6,81,3],[7,86,3],[8,[62,74,78,81,86],6]]},{"n":"ブラス長ファンファーレ","d":"3つの和音が重なり、最後を長く伸ばす","w":"sawtooth","v":0.045,"bpm":150,"sus":0.7,"s":[[0,[50,62,66],1.5],[1.5,[55,62,67,71],1.5],[3,[50,62,66,69,74,78],8]]},{"n":"パッド・スウェル","d":"音が2・3・5・7拍遅れで重なり、ゆっくり膨らむ","w":"sine","v":0.06,"bpm":180,"sus":0.8,"s":[[0,50,12],[2,62,10],[3,69,9],[5,74,7],[7,78,5]]},{"n":"星降る","d":"柔らかなパッドに、素数拍で高音の星が降る","w":"sine","v":0.06,"bpm":300,"sus":0.4,"bell":1,"s":[[0,[50,62,69],18,0.6],[2,93,4,0.5],[3,90,4,0.5],[5,88,4,0.5],[7,86,4,0.5],[11,81,4,0.5],[13,78,4,0.5]]},{"n":"マリンバ昇り","d":"木琴で8音上がり、和音で締める","w":"triangle","v":0.11,"bpm":240,"sus":0.03,"s":[[0,62,3],[1,64,3],[2,66,3],[3,69,3],[4,71,3],[5,74,3],[6,76,3],[7,78,3],[8.5,[62,74,78,81,86],8]]},{"n":"8bitリザルト","d":"矩形波のアルペジオを2周し、長い和音へ","w":"square","v":0.035,"bpm":480,"sus":0.5,"s":[[0,50,2],[1,62,2],[2,66,2],[3,69,2],[4,74,2],[5,78,2],[6,81,2],[7,86,2],[8,62,2],[9,66,2],[10,69,2],[11,74,2],[12,78,2],[13,81,2],[14,86,2],[15,90,2],[17,[50,62,66,69,74,78],12]]},{"n":"シネマ・ドン","d":"低音のドンから音が重なって広がる","w":"sine","v":0.1,"bpm":150,"sus":0.5,"s":[[0,[26,38],8,1.2],[2,[50,57],8],[3.5,[62,66,69],7],[5,[74,78,81,86],6]]},{"n":"ゴスペル終止","d":"Gの和音からDの和音へ(IV→I)。温かい余韻","w":"triangle","v":0.08,"bpm":160,"sus":0.7,"s":[[0,[43,55,62,67,71],3],[3,[50,62,66,69,74,78],8]]},{"n":"素数カウントアップ","d":"2・3・5・7・11・13・17拍目に音が昇り、和音で結ぶ","w":"sine","v":0.08,"bpm":480,"sus":0.2,"bell":1,"s":[[2,62,5],[3,66,5],[5,69,5],[7,74,5],[11,78,5],[13,81,5],[17,86,5],[19,[50,62,69,74,78,86],12]]},{"n":"テンション余韻","d":"Dの3・5・7・#11・13度をゆっくり重ねる","w":"sine","v":0.07,"bpm":200,"sus":0.2,"bell":1,"s":[[0,50,5],[1,54,5],[2,57,5],[3,61,5],[4,68,5],[5,71,5],[6,[50,54,57,61,68,71],8]]},{"n":"倍音ベル残響","d":"基音の2・3・5・7・11・13倍音が順に鳴り響く","w":"sine","v":0.08,"bpm":120,"sus":0.3,"bell":1,"s":[[0,50,7],[1,57.02,7],[2,65.86,6],[3,71.69,5],[4,79.51,4],[5,82.41,3]]},{"n":"度数タワー","d":"Dの1・3・5・7・11・13・17・19度を積み上げる","w":"sine","v":0.07,"bpm":200,"sus":0.15,"bell":1,"s":[[0,50,6],[1,54,6],[2,57,6],[3,61,6],[4,67,6],[5,71,6],[6,78,6],[7,81,6]]}];
-function scorefan(i=SCTHEME){try{const F=SCFANS[i-1],A=ac();A.resume&&A.resume();const t=A.currentTime+.02,s=60/F.bpm;
+// 1プレイ通してノーミス(MISSES=0)のときの結果発表: 「明けの鐘」と同じ音色・D長調の新曲。D→A→D→F#→A→Bと昇り(トゥ×6)、F#→E→Dと下り(トゥ・トゥ・トゥー)、最後にDの大和音。音の重ねなし
+const SCFAN_PERFECT={n:'暁(新曲)',w:'sine',v:.09,bpm:150,sus:.2,bell:1,s:[[0,62,3],[0.5,69,3],[1,74,3],[1.5,78,3],[2,81,3],[2.5,83,3.5],[3,78,3],[3.5,76,3],[4,74,3.5],[5,[50,62,69,74,78,81],8,1.1]]};
+function scorefan(i=SCTHEME,perfect=0){try{const F=perfect?SCFAN_PERFECT:SCFANS[i-1],A=ac();A.resume&&A.resume();const t=A.currentTime+.02,s=60/F.bpm;
  F.s.forEach(([b,m,l,g=1])=>{const a=[].concat(m);a.forEach(x=>voice(x,t+b*s,l*s,F.v*g/Math.sqrt(a.length),F.w,F.sus,F.bell))})}catch(e){}}
 let clean=1;
 // ===== NO-MISS FANFARE (起動音とは別) =====
@@ -307,7 +311,7 @@ function layout(){if(state==='intro')return;
   e.style.transform=`translate(${t.x-t.w/2}px,${t.y-t.s/2}px)`;x+=t.w});y+=r.h});
 }
 function spawn(tt){
- const n=last=gen(LV,rnd,last);cur=0;spl=0;ch=0;pen=penOf(n);clean=1;$('cb').textContent='';
+ const n=last=gen(LV,rnd,last);cur=0;spl=0;ch=0;pen=penOf(n,LV);clean=1;$('cb').textContent='';
  const t=mk(n,0,field.clientWidth/2,field.clientHeight/2);layout();busy=false;
 }
 function showToast(h,v,m){
@@ -338,19 +342,19 @@ function act(t,dir){
   const A=mk(a,t.d+1,t.x,t.y),B=mk(b,t.d+1,t.x,t.y);toks.pop();toks.pop();toks.splice(idx,0,A,B);
   [A,B].forEach(z=>{z.el.style.transform=`translate(${t.x-t.w/2}px,${t.y-t.s/2}px)`;z.el.style.fontSize=t.s+'px';z.el.style.width=t.w+'px'});
   requestAnimationFrame(layout);
-  swish(1,.035);tone(note(ch),.16,.085,0,'triangle');tone(note(ch)*2,.08,.02);ch++;vib(8);
+  swish(1,.035);{const f=pit(ch,0);tone(f,.16,.085,0,'triangle');tone(f*2,.08,.02)}ch++;vib(8);
  }else{
   if(!prime)return miss(t,dir,T);
   t.gone=1;{const ix=toks.indexOf(t);ops.push([ix,-1,T]);lastOp=T;toks.splice(ix,1)}
   t.i.style.transition='transform .2s ease-in,opacity .2s';t.i.style.transform='translateX(-45vw)';t.i.style.opacity=0;
   setTimeout(()=>t.el.remove(),230);
-  st.pr++;cur+=t.n;if(toks.length)pop(t,t.n);
-  swish(-1,.03);bell(note(ch+2),.075);ch++;vib(10);layout();
+  st.pr++;cur+=pv(t.n,LV);if(toks.length)pop(t,pv(t.n,LV));
+  swish(-1,.03);bell(pit(ch,2),.075);ch++;vib(10);layout();
   if(!toks.length){
    done++;busy=true;
-   const m=mult(spl);st.bn=Math.max(st.bn,cur*m);score+=cur*m;$('sc').textContent='SCORE '+score;$('cb').textContent='';
-   showToast(t.d===0?'PRIME':'PRIME COMPLETE',cur*m,m);
-   if(clean)nofan();else if(t.d>0)[1,3,5].forEach((k,i)=>bell(note(ch+k),.06,.08+i*.07))
+   const m=mult(spl),mm=clean?CLEAN_BONUS:1,gain=Math.round(cur*m*mm);st.bn=Math.max(st.bn,gain);score+=gain;$('sc').textContent='SCORE '+score;$('cb').textContent='';
+   showToast(clean?'PERFECT':t.d===0?'PRIME':'PRIME COMPLETE',gain,m*mm);
+   if(clean)nofan();else if(t.d>0)[1,3,5].forEach((k,i)=>bell(pit(ch,k),.06,.08+i*.07))
    setTimeout(()=>{if(state==='play')spawn(T)},t.d===0?220:380);
   }
  }
@@ -371,7 +375,7 @@ gameEl.addEventListener('pointermove',e=>{
  if(Math.abs(dx)>=T){drag=null;t.i.style.transition='';t.i.style.opacity='';t.i.style.transform='';act(t,dx>0?1:-1)}
 });
 const endDrag=()=>{if(!drag)return;const t=drag.t;drag=null;t.i.style.transition='transform .18s cubic-bezier(.2,.8,.2,1),opacity .18s';t.i.style.transform='';t.i.style.opacity=''};
-// タップ操作: 画面の右半分=素数じゃない(分解) / 左半分=素数(回収)。PCの←→キーと同じく先頭の数が対象
+// タップ操作: 画面の右半分=素数ではない(分解) / 左半分=素数(回収)。PCの←→キーと同じく先頭の数が対象
 gameEl.addEventListener('pointerup',e=>{
  const d=drag;
  if(d&&!d.mv&&e.pointerId===d.id){
@@ -422,7 +426,7 @@ function finish(){
  cd.animate([{opacity:0,transform:'scale(1.08)'},{opacity:1,transform:'none'}],{duration:220,easing:'ease-out'});
  [9,7,4].forEach((k,i)=>bell(note(k),.07,i*.12));tone(note(0)/2,.7,.09,.28);vib([30,40,30]);
  submit();
- setTimeout(()=>{cd.textContent='';cd.style.cssText='';$('rs').textContent=score;showStats();state='end';show('end');revealEnd();if(score>0)scorefan()},1500);
+ setTimeout(()=>{cd.textContent='';cd.style.cssText='';$('rs').textContent=score;showStats();state='end';show('end');revealEnd();if(score>0)scorefan(SCTHEME,st.mi===0)},1500);
 }
 // ---------- result: 上から順に表示(効果音「明けの鐘」の約4秒に合わせる) ----------
 let revT=[];

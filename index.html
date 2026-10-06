@@ -2,6 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
+<meta http-equiv="Cache-Control" content="no-cache">
 <script>try{if(localStorage.getItem("prime_theme")==="dark"){document.documentElement.dataset.theme="dark";document.querySelector('meta[name="theme-color"]').content="#000000"}}catch(e){}</script>
 <link rel="icon" href="favicon.ico" sizes="48x48">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -130,7 +131,8 @@ background:transparent;color:inherit;border:1px solid var(--line);border-radius:
  <div class="link" id="rmPlay">PLAY</div>
  <div class="link" id="rmShare" style="opacity:.5;font-size:10px">SHARE</div>
  <div class="rmsg" id="rmMsg"></div>
- <div class="lab" id="rmRes" style="margin:22px 0 8px">RESULTS</div>
+ <div class="lab" id="rmHere" style="display:none;margin:22px 0 0">IN ROOM 0</div>
+ <div class="lab" id="rmRes" style="margin:12px 0 8px">RESULTS</div>
  <div id="rmList" style="width:100%;text-align:left"></div>
  <div class="link" id="rmBack" style="opacity:.5;font-size:10px;margin-top:30px">TOP</div>
 </div></div>
@@ -566,17 +568,18 @@ function openVs(){state='vs';vsMsg('');mkLv($('vsLv'),()=>LV,l=>{LV=l});show('vs
 function openRoom(code,level){
  RM={code,level:level||0,played:false};state='room';show('room');
  $('rmCode').textContent=code;$('rmLv').textContent=level?'LEVEL '+level:'\u00a0';$('rmList').innerHTML='';$('rmRes').textContent='RESULTS';
- rmMsg('');$('rmPlay').style.display='none';$('rmStart').style.display='none';loadRoom();clearInterval(roomT);roomT=setInterval(()=>{if(state==='room')loadRoom()},1500);
+ rmMsg('');$('rmPlay').style.display='none';$('rmStart').style.display='none';hb();loadRoom();clearInterval(roomT);roomT=setInterval(()=>{if(state==='room')loadRoom()},1500);
 }
 async function loadRoom(){
  const r0=RM;if(!r0)return;
  try{
-  const t1=Date.now(),d=await get('room/info?code='+r0.code+'&cid='+CID),t2=Date.now();if(RM!==r0||state!=='room')return;
+  const t1=Date.now(),d=await get('room/info?code='+r0.code+'&cid='+CID),t2=Date.now();checkVer(d.ver);if(RM!==r0||state!=='room')return;
   const at=d.startAt?d.startAt-(d.now-(t1+t2)/2):0; // 開始時刻を自分の端末の時計に換算
   r0.level=d.level;r0.at=at;$('rmLv').textContent='LEVEL '+d.level;
   $('rmRes').textContent='RESULTS  '+d.list.length+' / '+d.joined;
   if(d.list.length)rows($('rmList'),d.list.map(x=>({me:x.me,n:String(x.n).slice(0,12),s:x.s,t:x.t})));else $('rmList').innerHTML='';
   if(!d.inRound&&at&&Date.now()<at+1500&&!rmBusy){joinRoom(at);return} // 新ラウンド開始直後 → 自動で参加してカウントダウンへ
+  $('rmHere').style.display=d.host&&d.here!=null?'':'none';$('rmHere').textContent='IN ROOM  '+d.here;
   $('rmStart').style.display=d.host?'':'none';
   $('rmStart').textContent=d.startAt?'NEW ROUND':'START';
   const late=!d.inRound&&at&&Date.now()<at+60000; // 今ラウンドに遅れて参加できる(開始から60秒以内)
@@ -587,13 +590,42 @@ async function loadRoom(){
   if(e&&e.code===404){state='vs';show('vs');vsMsg('NO ROOM')}else rmMsg('OFFLINE'+(e&&e.code?' · '+e.code:''));
  }
 }
+// ===== 自動アップデート: サーバーのVERが自分より新しければ、安全な画面で自動リロード =====
+// worker.js の VER と同じ値にしておく(デプロイのたびに両方を上げる)
+const VER='2026-10-06.2';
+let newVer='';
+function checkVer(v){if(typeof v==='string'&&v>VER)newVer=v}
+function safeToReload(){return['top','room','end','board','vs','rule','name','intro'].includes(state)}
+function applyUpdate(){
+ if(!newVer||!safeToReload())return;
+ let tried='';try{tried=sessionStorage.getItem('prime_upd')||''}catch(e){}
+ if(tried===newVer)return; // 同じ版へ一度リロードしても古いままなら、ループを避けて止める
+ try{sessionStorage.setItem('prime_upd',newVer)}catch(e){}
+ const q=new URLSearchParams();q.set('v',newVer);
+ if(RM&&RM.code&&(state==='room'||state==='end'))q.set('room',RM.code);
+ location.replace(location.pathname+'?'+q.toString()); // URLを変えて、キャッシュされた古いHTMLを避ける
+}
+async function pollVer(){try{const r=await get('ver');checkVer(r.ver);applyUpdate()}catch(e){}}
+pollVer();setInterval(pollVer,5*60*1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)pollVer()});
+setInterval(applyUpdate,2000); // プレイ中に新版を検知した場合は、プレイが終わってから更新
+
+// 在室ハートビート: ルーム画面と、ルームでのプレイ中/スコア画面にいる間、3秒おきに送る(サーバーは直近10秒の端末数を数える)
+function hbCode(){
+ if(state==='room'&&RM)return RM.code;
+ if(roomCtx&&['starting','count','play','pause','over','end'].includes(state))return roomCtx.code;
+ return '';
+}
+function hb(){const c=hbCode();if(c)call('room/hb',{code:c,cid:CID}).catch(()=>{})}
+setInterval(hb,3000);
+
 // スコア画面を見ている間もホストの開始を監視し、新ラウンドが始まったら強制的にそのラウンドへ参加させる
 let watchBusy=0,rankEl=null;
 async function roomPoll(){
  if(state!=='end'||!roomCtx||watchBusy)return;
  watchBusy=1;
  try{
-  const code=roomCtx.code,t1=Date.now(),d=await get('room/info?code='+code+'&cid='+CID),t2=Date.now();
+  const code=roomCtx.code,t1=Date.now(),d=await get('room/info?code='+code+'&cid='+CID),t2=Date.now();checkVer(d.ver);
   if(state==='end'&&rankEl){ // ROOM RANK: 提出時点の順位ではなく、最新のルーム結果での自分の位置を表示
    const me=d.list.find(x=>x.me);
    rankEl.textContent=me?'#'+(1+d.list.filter(x=>x.s>me.s).length)+' / '+d.list.length:'…';

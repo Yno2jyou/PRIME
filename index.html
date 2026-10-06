@@ -477,7 +477,8 @@ function showStats(){
  const L=[['PRIME COMPLETE',done],['MAX COMBO',st.mc],['BEST NUMBER',st.bn],['SPLITS',st.sp],['PRIMES',st.pr],['MISSES',st.mi],['PENALTY',st.pn?'−'+st.pn:'0'],['ACCURACY',acc+'%'],[roomCtx?'ROOM RANK':'WORLD RANK',rankP?'…':'—']];
  $('rl').textContent=(roomCtx?'ROOM '+roomCtx.code+'  ':'')+'LEVEL '+LV+'  SCORE';$('retry').textContent=roomCtx?'ROOM':'RETRY';const el=$('stats');el.textContent='';
  L.forEach(([k,v])=>{const r=document.createElement('div');r.className='r';const a=document.createElement('em');a.style.width='auto';a.style.flex='1';a.textContent=k;const b=document.createElement('b');b.style.fontSize='15px';b.textContent=v;r.append(a,b);el.appendChild(r)});
- const wr=el.lastChild.querySelector('b');if(rankP)rankP.then(x=>{wr.textContent=x&&x.rank?'#'+x.rank+(x.total?' / '+x.total:''):'—'}).catch(()=>{wr.textContent='—'});
+ const wr=el.lastChild.querySelector('b');rankEl=roomCtx?wr:null;
+ if(rankP){if(roomCtx)rankP.then(()=>roomPoll()).catch(()=>{wr.textContent='—'});else rankP.then(x=>{wr.textContent=x&&x.rank?'#'+x.rank+(x.total?' / '+x.total:''):'—'}).catch(()=>{wr.textContent='—'})}
 }
 // ---------- pause ----------
 let pAt=0,runId=0,pState='play';const cd=$('cd'),sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -587,19 +588,24 @@ async function loadRoom(){
  }
 }
 // スコア画面を見ている間もホストの開始を監視し、新ラウンドが始まったら強制的にそのラウンドへ参加させる
-let watchBusy=0;
-setInterval(async()=>{
- if(state!=='end'||!roomCtx||rmBusy||watchBusy)return;
+let watchBusy=0,rankEl=null;
+async function roomPoll(){
+ if(state!=='end'||!roomCtx||watchBusy)return;
  watchBusy=1;
  try{
   const code=roomCtx.code,t1=Date.now(),d=await get('room/info?code='+code+'&cid='+CID),t2=Date.now();
-  if(state==='end'&&roomCtx&&roomCtx.code===code&&!rmBusy&&!d.inRound&&d.startAt){
+  if(state==='end'&&rankEl){ // ROOM RANK: 提出時点の順位ではなく、最新のルーム結果での自分の位置を表示
+   const me=d.list.find(x=>x.me);
+   rankEl.textContent=me?'#'+(1+d.list.filter(x=>x.s>me.s).length)+' / '+d.list.length:'…';
+  }
+  if(!rmBusy&&state==='end'&&roomCtx&&roomCtx.code===code&&!d.inRound&&d.startAt){
    const at=d.startAt-(d.now-(t1+t2)/2);
    if(Date.now()<at+60000){RM={code,level:d.level,played:false,at};joinRoom(at)}
   }
  }catch(e){}
  watchBusy=0;
-},1500);
+}
+setInterval(roomPoll,1500);
 function backToRoom(){if(roomCtx)openRoom(roomCtx.code,roomCtx.level);else{state='top';show('top')}}
 $('vsbtn').onclick=openVs;$('vsBack').onclick=()=>{state='top';show('top')};
 $('vsNew').onclick=async()=>{

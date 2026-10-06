@@ -586,6 +586,20 @@ async function loadRoom(){
   if(e&&e.code===404){state='vs';show('vs');vsMsg('NO ROOM')}else rmMsg('OFFLINE'+(e&&e.code?' · '+e.code:''));
  }
 }
+// スコア画面を見ている間もホストの開始を監視し、新ラウンドが始まったら強制的にそのラウンドへ参加させる
+let watchBusy=0;
+setInterval(async()=>{
+ if(state!=='end'||!roomCtx||rmBusy||watchBusy)return;
+ watchBusy=1;
+ try{
+  const code=roomCtx.code,t1=Date.now(),d=await get('room/info?code='+code+'&cid='+CID),t2=Date.now();
+  if(state==='end'&&roomCtx&&roomCtx.code===code&&!rmBusy&&!d.inRound&&d.startAt){
+   const at=d.startAt-(d.now-(t1+t2)/2);
+   if(Date.now()<at+60000){RM={code,level:d.level,played:false,at};joinRoom(at)}
+  }
+ }catch(e){}
+ watchBusy=0;
+},1500);
 function backToRoom(){if(roomCtx)openRoom(roomCtx.code,roomCtx.level);else{state='top';show('top')}}
 $('vsbtn').onclick=openVs;$('vsBack').onclick=()=>{state='top';show('top')};
 $('vsNew').onclick=async()=>{

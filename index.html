@@ -654,26 +654,47 @@ function loadAccountProgress(d){
  }
 }
 function normId(id){return String(id||'').trim().slice(0,16).toLowerCase()}
-// ローカルアカウントを正規化（大文字小文字違いの重複キーを1つにまとめる）
+function towerOf(rec){return Math.max(0,+((rec&&rec.data&&rec.data.towerBest)||0))}
+function hashList(rec){
+ const s=new Set();
+ if(!rec)return s;
+ if(rec.hash)s.add(rec.hash);
+ if(Array.isArray(rec.hashes))rec.hashes.forEach(h=>h&&s.add(h));
+ return s;
+}
+function hashMatch(rec,hash){return hashList(rec).has(hash)}
+// 同一IDの重複を1つに統合（進捗が多い方を優先、パスワードハッシュは両方保持→どちらのパスでもログイン可）
 function localUsers(){
  let raw={};
  try{raw=JSON.parse(localStorage.getItem('prime_users')||'{}')}catch(e){raw={}}
- const out={};
- let changed=false;
+ const buckets={};
  for(const k of Object.keys(raw)){
   const nk=normId(k);
-  if(!nk){changed=true;continue}
-  if(!out[nk]){out[nk]=raw[k];if(k!==nk)changed=true}
-  else{
-   // 同一IDの重複キー → 進捗はマージ、ハッシュは先勝ち
+  if(!nk||!raw[k])continue;
+  if(!buckets[nk])buckets[nk]=[];
+  buckets[nk].push(raw[k]);
+ }
+ const out={};
+ let changed=Object.keys(raw).some(k=>normId(k)!==k)||Object.keys(raw).length!==Object.keys(buckets).length;
+ for(const nk of Object.keys(buckets)){
+  const list=buckets[nk];
+  // 進捗が多い順
+  list.sort((a,b)=>towerOf(b)-towerOf(a));
+  const primary=list[0];
+  const hashes=[...hashList(primary)];
+  let data=primary.data||emptyProgress(nk);
+  let token=primary.token;
+  for(let i=1;i<list.length;i++){
    changed=true;
-   const a=out[nk],b=raw[k];
-   if(a&&b){
-    a.data=mergeProgress(a.data||{},b.data||{});
-    if(!a.hash&&b.hash)a.hash=b.hash;
-    if(!a.token&&b.token)a.token=b.token;
-   }
+   const o=list[i];
+   data=mergeProgress(data,o.data||{});
+   hashList(o).forEach(h=>{if(!hashes.includes(h))hashes.push(h)});
+   if(!token&&o.token)token=o.token;
   }
+  data.name=nk;
+  // メインhashは進捗最多アカウントのもの、hashesに全部
+  out[nk]={hash:hashes[0]||primary.hash,hashes,token:token||('local_'+nk),data};
+  if(list.length>1)changed=true;
  }
  if(changed)try{localStorage.setItem('prime_users',JSON.stringify(out))}catch(e){}
  return out;
@@ -684,29 +705,33 @@ function findLocalUser(id){
  return{users,key,rec:users[key]||null};
 }
 async function doAuthLocal(mode,id,hash,browserProgress){
+ // 起動時に重複を必ず整理
  const{users,key,rec}=findLocalUser(id);
  if(mode==='register'){
   if(rec){
-   // 同じパスワードならログイン扱い（新規登録はしない）
-   if(rec.hash===hash){
+   if(hashMatch(rec,hash)){
     const data=mergeProgress(rec.data||emptyProgress(key),browserProgress);
-    data.name=key;rec.data=data;users[key]=rec;saveLocalUsers(users);
+    data.name=key;
+    rec.data=data;rec.hash=hash;rec.hashes=[hash];
+    users[key]=rec;saveLocalUsers(users);
     return{token:rec.token,data,local:1};
    }
-   // 別パスワードで同じID → 拒否
    const e=new Error('taken');e.code=409;throw e;
   }
-  // 本当に新規
   const token='local_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
   const data=mergeProgress(emptyProgress(key),browserProgress);
   data.name=key;
-  users[key]={hash,token,data};saveLocalUsers(users);
+  users[key]={hash,hashes:[hash],token,data};saveLocalUsers(users);
   return{token,data,local:1};
  }
- // LOGIN
- if(!rec||rec.hash!==hash){const e=new Error('auth');e.code=401;throw e}
+ // LOGIN: 重複で残ったどのパスワードでも通す → 成功したらそのパスワードに一本化
+ if(!rec||!hashMatch(rec,hash)){const e=new Error('auth');e.code=401;throw e}
  const data=mergeProgress(rec.data||emptyProgress(key),browserProgress);
- data.name=key;rec.data=data;users[key]=rec;saveLocalUsers(users);
+ data.name=key;
+ rec.data=data;
+ rec.hash=hash;
+ rec.hashes=[hash]; // 使えたパスワードだけ残す
+ users[key]=rec;saveLocalUsers(users);
  return{token:rec.token,data,local:1};
 }
 // 現在の進捗をログイン中アカウントへ保存
@@ -830,7 +855,9 @@ nm.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventD
 pw.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();doAuth('login')}});
 $('who').onclick=()=>{introStop();state='name';show('name');authMsg('');refreshLogoutBtn();nm.focus()};
 addEventListener('load',async()=>{
- nm.value=PN;
+ // 重複アカウントを起動時に整理（進捗が多い方＋パスワード両対応）
+ try{localUsers()}catch(e){}
+ nm.value=PN||(()=>{try{return localStorage.getItem('prime_uid')||''}catch(e){return''}})();
  if(authToken){
   authMsg('…');
   try{

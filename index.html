@@ -50,6 +50,7 @@ h1.title-rainbow,.name-rainbow,#who.name-rainbow{background:linear-gradient(90de
 #world.fold .r.x{display:none}
 #game.intro .hud{visibility:hidden}#game.intro #quit{pointer-events:none}
 #conf{z-index:10;background:var(--bg)}
+#delconf{z-index:11;background:var(--bg)}
 .nil{font-size:11px;opacity:.4;letter-spacing:.2em}
 #field{position:absolute;inset:0}
 .tok{position:absolute;left:0;top:0;text-align:center;white-space:nowrap;line-height:1;font-weight:300;letter-spacing:-.02em;
@@ -111,8 +112,11 @@ background:transparent;color:inherit;border:1px solid var(--line);border-radius:
   </div>
   <div class="link" id="authReset" style="font-size:10px;opacity:.4;margin-top:14px;display:none">RESET PASS</div>
   <div class="link" id="authLogout" style="font-size:10px;opacity:.4;margin-top:18px;display:none">LOGOUT</div>
+  <div class="link" id="authDelete" style="font-size:10px;opacity:.4;margin-top:8px;display:none;color:var(--neg)">DELETE</div>
  </div>
 </div>
+<div class="screen" id="delconf"><div style="font-size:13px;letter-spacing:.15em;font-weight:300;text-align:center;padding:0 24px">アカウントを削除しますか？<br><span style="display:block;font-size:10px;opacity:.45;letter-spacing:.12em;margin-top:12px">進捗・スコアは復元できません</span></div>
+ <div class="row" style="margin-top:36px"><div class="link" id="delYes" style="color:var(--neg)">削除する</div><div class="link" id="delNo" style="opacity:.5">キャンセル</div></div></div>
 <div class="screen" id="top">
  <div class="link" id="who" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;font-size:10px;opacity:.4;margin:0"></div>
  <div class="link" id="topLogout" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;margin-top:18px;font-size:9px;opacity:.35;letter-spacing:.14em;display:none">LOGOUT</div>
@@ -464,6 +468,7 @@ addEventListener('keydown',e=>{
  else if(state==='rule'){if(e.key==='Escape'||e.key==='Enter'){e.preventDefault();closeRule()}}
  else if(state==='top'&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){LV=Math.min(5,Math.max(1,LV+(e.key==='ArrowRight'?1:-1)));[...$('lvT').children].forEach((c,j)=>c.className=j+1===LV?'on':'')}
  else if(state==='intro'&&!e.repeat&&performance.now()-navAt>400)introEnd();
+ else if(state==='delconf'&&(e.key==='Escape'||e.key==='Enter')){e.preventDefault();if(e.key==='Escape'){$('delNo').click()}else{$('delYes').click()}}
  else if((state==='vs'||state==='room'||state==='tower')&&e.key==='Escape'){state='top';show('top')}
  else if(state==='tower'&&e.key==='Enter'&&!e.repeat){e.preventDefault();towerBattle=1;startTowerBattle()}
  else if(state==='twres'&&e.key==='Enter'&&!e.repeat){e.preventDefault();$('twrNext').click()}
@@ -472,7 +477,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('resize',layout);
 // ---------- flow ----------
-function show(id,q){['name','top','game','end','board','rule','vs','room','tower','twres'].forEach(s=>{const e=$(s),on=s===id;
+function show(id,q){['name','top','game','end','board','rule','vs','room','tower','twres','delconf'].forEach(s=>{const e=$(s),on=s===id;
  if(q&&!on&&e.classList.contains('on')){e.style.transition='none';e.classList.remove('on');void e.offsetWidth;e.style.transition=''}else e.classList.toggle('on',on)});showHook(id)}
 const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 let playDur=DUR;
@@ -574,14 +579,26 @@ function submit(){
 }
 const fd=t=>{const d=new Date(t),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())};
 function nameThemeClass(){const t=titleThemeOf(towerBest);return t?'name-'+t:''}
-// 名前先頭のランク記号（Z1 / α3 / ∞ 等）から色テーマを判定 — 他プレイヤーのランキングにも反映
-function themeFromName(name){
- const s=String(name||'').trim();
- if(!s)return '';
- // ∞ / Ω は1文字、それ以外はギリシャ文字 or Z + 任意の数字
- const m=s.match(/^([ZαβγδεζηθΩ∞])/);
- if(!m)return '';
- const sym=m[1];
+// ランク接頭辞を除いた素のプレイヤー名
+function basePlayerName(name){
+ return String(name||'').replace(/^[ZαβγδεζηθΩ∞]\d*\s+/,'').trim()||String(name||'').trim();
+}
+function rankValueFromName(name){
+ const m=String(name||'').trim().match(/^([ZαβγδεζηθΩ∞])(\d*)/);
+ if(!m)return 0;
+ const sym=m[1],n=m[2]?+m[2]:1;
+ if(sym==='∞')return 47;
+ if(sym==='Ω')return 46;
+ const base={Z:0,α:5,β:10,γ:15,δ:20,ε:25,ζ:30,η:35,θ:40};
+ return (base[sym]||0)+Math.min(Math.max(n,1),5);
+}
+function rankLabelFromName(name){
+ const m=String(name||'').trim().match(/^([ZαβγδεζηθΩ∞]\d*)/);
+ return m?m[1]:'';
+}
+function themeFromRankLabel(label){
+ if(!label)return '';
+ const sym=label.charAt(0);
  if(sym==='∞')return 'rainbow';
  if(sym==='Ω'||sym==='θ')return 'gold';
  if(sym==='η'||sym==='ζ')return 'red';
@@ -590,28 +607,64 @@ function themeFromName(name){
  if(sym==='α'||sym==='Z')return 'gray';
  return '';
 }
-function paintNameEl(e,force,nameText){
+function themeFromName(name){return themeFromRankLabel(rankLabelFromName(name))}
+// 同一プレイヤーの記録から最高ランクを採用（＝現在の到達度）
+function isMyPlayerName(name){
+ const base=basePlayerName(name).toLowerCase();
+ const me=String(PN||'').trim().toLowerCase();
+ return !!(base&&me&&base===me);
+}
+function currentRankLabelFor(name,list,isMe){
+ // 自分は常に現在の最高到達（towerBest）を表示
+ if(isMe||isMyPlayerName(name)){
+  if(towerBest)return twLabel(towerBest);
+  return '';
+ }
+ const base=basePlayerName(name);
+ let best=0,label='';
+ (list||[]).forEach(x=>{
+  if(basePlayerName(x.n).toLowerCase()!==base.toLowerCase())return;
+  const v=rankValueFromName(x.n);
+  if(v>best){best=v;label=rankLabelFromName(x.n)}
+ });
+ return label||rankLabelFromName(name);
+}
+function displayNameForRank(name,list,isMe){
+ const mine=!!(isMe||isMyPlayerName(name));
+ const base=mine?(PN||basePlayerName(name)):basePlayerName(name);
+ const label=currentRankLabelFor(name,list,mine);
+ return label?(label+' '+base):base;
+}
+function paintNameEl(e,force,nameText,list){
  if(!e)return;
  ['name-gray','name-blue','name-purple','name-red','name-gold','name-rainbow'].forEach(c=>e.classList.remove(c));
- // 自分: towerBest / 他人: 名前のランク記号から
  let t='';
- if(force||e.dataset.me==='1')t=titleThemeOf(towerBest);
- if(!t)t=themeFromName(nameText!=null?nameText:e.textContent);
+ const mine=!!(force||e.dataset.me==='1'||isMyPlayerName(nameText!=null?nameText:e.textContent));
+ if(mine)t=titleThemeOf(towerBest);
+ if(!t){
+  const label=currentRankLabelFor(nameText!=null?nameText:e.textContent,list,false);
+  t=themeFromRankLabel(label);
+ }
  if(t)e.classList.add('name-'+t);
 }
 function rows(el,list){
  el.textContent='';
  if(!list.length){const n=document.createElement('div');n.className='nil';n.textContent='—';el.appendChild(n);return}
  const localMine=el.id==='mine';
- list.forEach((x,i)=>{const r=document.createElement('div');r.className='r'+(i>=10&&el.id==='world'?' x':'');
-  [['em',i+1],['u',x.n||'—'],['b',x.s],['span',fd(x.t)]].forEach(([k,v])=>{
+ list.forEach((x,i)=>{
+  const isMe=!!(x.me||localMine||isMyPlayerName(x.n));
+  const r=document.createElement('div');r.className='r'+(i>=10&&el.id==='world'?' x':'');
+  const shown=displayNameForRank(x.n||'',list,isMe);
+  [['em',i+1],['u',shown],['b',x.s],['span',fd(x.t)]].forEach(([k,v])=>{
    const e=document.createElement(k);e.textContent=v;
-   if(x.me&&k==='b')e.style.fontWeight=600;
+   if(isMe&&k==='b')e.style.fontWeight=600;
    if(k==='u'){
-    if(x.me||localMine)e.dataset.me='1';
-    paintNameEl(e,!!(x.me||localMine),x.n||'');
+    if(isMe)e.dataset.me='1';
+    paintNameEl(e,isMe,shown,list);
    }
-   r.appendChild(e)});el.appendChild(r)});
+   r.appendChild(e)});
+  el.appendChild(r);
+ });
 }
 async function openBoard(){
  show('board');state='board';$('board').scrollTop=0;
@@ -904,9 +957,10 @@ async function doAuth(mode){
 function goTop(){/* legacy */enterApp()}
 function refreshLogoutBtn(){
  const on=!!authToken;
- const a=$('authLogout'),t=$('topLogout');
+ const a=$('authLogout'),t=$('topLogout'),d=$('authDelete');
  if(a)a.style.display=on?'':'none';
  if(t)t.style.display=on?'':'none';
+ if(d)d.style.display=on?'':'none';
 }
 async function doLogout(){
  if(authBusy)return;
@@ -925,11 +979,53 @@ async function doLogout(){
  state='name';show('name');
  nm.focus();
 }
+async function doDeleteAccount(){
+ if(authBusy||!authToken)return;
+ authBusy=1;authMsg('DELETE…');
+ const uid=normId((()=>{try{return localStorage.getItem('prime_uid')||PN||nm.value}catch(e){return PN||nm.value}})());
+ try{
+  // ローカルアカウント削除
+  if(uid){
+   const users=localUsers();
+   if(users[uid]){delete users[uid];saveLocalUsers(users)}
+  }
+  // サーバーアカウント削除（エンドポイントがあれば）
+  if(authToken&&!String(authToken).startsWith('local_')){
+   try{await call('auth/delete',{token:authToken})}catch(e){}
+  }
+ }catch(e){}
+ // セッション・進捗を端末から消去
+ authToken='';
+ try{
+  localStorage.removeItem('prime_token');
+  localStorage.removeItem('prime_uid');
+  localStorage.removeItem('prime_name');
+  localStorage.removeItem('prime_tower_best');
+  localStorage.removeItem('prime_mine');
+  for(let l=1;l<=5;l++)localStorage.removeItem(LK(l));
+ }catch(e){}
+ PN='';towerBest=0;
+ nm.value='';pw.value='';
+ authMsg('DELETED');
+ refreshLogoutBtn();
+ $('who').textContent='';
+ applyTitleTheme();
+ authBusy=0;
+ state='name';show('name');
+ nm.focus();
+}
+function openDeleteConfirm(){
+ if(!authToken)return;
+ state='delconf';show('delconf');
+}
 $('authLogin').onclick=()=>doAuth('login');
 $('authReg').onclick=()=>doAuth('register');
 $('authReset').onclick=()=>doResetPass();
 $('authLogout').onclick=()=>doLogout();
 $('topLogout').onclick=()=>doLogout();
+$('authDelete').onclick=()=>openDeleteConfirm();
+$('delYes').onclick=()=>doDeleteAccount();
+$('delNo').onclick=()=>{state='name';show('name');authMsg('');refreshLogoutBtn();nm.focus()};
 nm.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();pw.focus()}});
 pw.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();doAuth('login')}});
 $('who').onclick=()=>{introStop();state='name';show('name');authMsg('');refreshLogoutBtn();nm.focus()};
@@ -1011,7 +1107,7 @@ async function loadRoom(){
 const VER='2026-10-06.2';
 let newVer='';
 function checkVer(v){if(typeof v==='string'&&v>VER)newVer=v}
-function safeToReload(){return['top','room','end','board','vs','rule','name','intro','tower','twres'].includes(state)}
+function safeToReload(){return['top','room','end','board','vs','rule','name','intro','tower','twres','delconf'].includes(state)}
 function applyUpdate(){
  if(!newVer||!safeToReload())return;
  let tried='';try{tried=sessionStorage.getItem('prime_upd')||''}catch(e){}

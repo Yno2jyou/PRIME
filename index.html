@@ -1017,6 +1017,38 @@ function enterApp(opts){
  }
  intro();
 }
+// ローカル専用アカウントをサーバーへ昇格（他端末から LOGIN 可能にする）
+async function promoteLocalToServer(id,pass,disp,data){
+ const hash=await sha256(id+':'+pass);
+ try{
+  let r=null;
+  try{
+   r=await call('auth/register',{id,hash});
+   if(r&&r.error==='taken'){const e=new Error('taken');e.code=409;throw e}
+  }catch(e){
+   if(e&&e.code===409){
+    // 既にサーバー登録済み → ログインのみ
+    r=await serverLoginWithVariants(id,pass,disp);
+   }else if(e&&(e.code===404||e.code===405)){
+    return null; // APIなし
+   }else if(e&&e.name==='TypeError'){
+    return null; // オフライン
+   }else{
+    // 登録失敗でもログインを試す
+    try{r=await serverLoginWithVariants(id,pass,disp)}catch(e2){return null}
+   }
+  }
+  if(!r)return null;
+  // register 応答にトークンが無い／ローカル扱いになった場合はログインし直す
+  if(!r.token||String(r.token).startsWith('local_')){
+   try{r=await serverLoginWithVariants(id,pass,disp)}catch(e){return null}
+  }
+  if(!r||!r.token||String(r.token).startsWith('local_'))return null;
+  r.data=mergeProgress(r.data||emptyProgress(id),data||{});
+  r.data.name=preferName(disp,r.data.name||id);
+  return r;
+ }catch(e){return null}
+}
 async function doAuth(mode){
  if(authBusy)return;authBusy=1;
  const disp=typedId();
@@ -1041,7 +1073,7 @@ async function doAuth(mode){
     r=await call('auth/register',{id,hash});
     if(r&&r.error==='taken'){const e=new Error('taken');e.code=409;throw e}
    }else{
-    // ログイン: ID表記ゆれのハッシュを順に試す
+    // ログインのみでOK（再登録不要）。ID表記ゆれのハッシュを順に試す
     r=await serverLoginWithVariants(id,pass,disp);
    }
    r.data=mergeProgress(r.data||emptyProgress(id),browserProgress);
@@ -1051,16 +1083,21 @@ async function doAuth(mode){
     if(mode==='register')throw e;
     throw e;
    }else if(e&&(e.code===404||e.code===405)){
-    // API未対応 → ローカル認証
     r=await doAuthLocal(mode,id,pass,browserProgress,disp);
    }else if(e&&e.code===401&&mode==='login'){
-    // サーバーで不一致 → この端末のローカルアカウントを試す
+    // サーバー未登録 or パスワード不一致 → この端末のローカルを試す
     try{
      r=await doAuthLocal('login',id,pass,browserProgress,disp);
     }catch(e2){
-     throw e; // 元の401を返す
+     throw e;
     }
    }else throw e;
+  }
+  // ローカル専用で入れた場合: オンラインならサーバーへ昇格（他端末は LOGIN のみで入れる）
+  if(r&&r.token&&String(r.token).startsWith('local_')){
+   authMsg('SYNC…');
+   const up=await promoteLocalToServer(id,pass,disp,r.data||browserProgress);
+   if(up)r=up;
   }
   authToken=r.token||'';
   try{localStorage.setItem('prime_token',authToken);localStorage.setItem('prime_uid',id)}catch(e){}
@@ -1072,11 +1109,11 @@ async function doAuth(mode){
   authBusy=0;
   if(e&&e.code===409)authMsg('ID TAKEN');
   else if(e&&e.code===401){
-   authMsg('WRONG ID / PASS');
+   // 未登録の可能性を案内（再登録は不要な旨は、既にサーバーにあれば LOGIN で入れる）
    const{rec}=findLocalUser(id);
-   if(rec)$('authReset').style.display='';
+   if(rec){authMsg('WRONG ID / PASS');$('authReset').style.display=''}
+   else authMsg('WRONG ID / PASS');
   }else if(e&&e.name==='TypeError'){
-   // fetch失敗（オフライン・CORS等）
    try{
     r=await doAuthLocal(mode,id,pass,collectProgress(),disp);
     authToken=r.token||'';

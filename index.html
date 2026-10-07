@@ -566,7 +566,12 @@ const mineSet=()=>{try{return new Set(JSON.parse(localStorage.getItem('prime_min
 const remember=id=>{if(id==null)return;try{const a=[...mineSet(),id].slice(-300);localStorage.setItem('prime_mine',JSON.stringify(a))}catch(e){}};
 async function remoteTop(l){
  const r=await fetch(API+'/api/top?level='+l);if(!r.ok){const e=new Error('http');e.code=r.status;throw e}
- const m=mineSet();return (await r.json()).map(x=>({me:m.has(x.id),n:String(x.name).slice(0,12),s:x.score,t:x.ts}));
+ const m=mineSet();
+ return (await r.json()).map(x=>{
+  const n=String(x.name).slice(0,16);
+  // 提出ID一致、またはログイン中IDと同名 → 自分の記録（ログイン導入前後の連続性）
+  return{me:m.has(x.id)||isMyPlayerName(n),n:n.slice(0,12),s:x.score,t:x.ts};
+ });
 }
 let PN=(()=>{try{return localStorage.getItem('prime_name')||''}catch(e){return''}})();
 const LK=l=>'prime47_best_'+l;
@@ -610,9 +615,16 @@ function themeFromRankLabel(label){
 function themeFromName(name){return themeFromRankLabel(rankLabelFromName(name))}
 // 同一プレイヤーの記録から最高ランクを採用（＝現在の到達度）
 function isMyPlayerName(name){
+ // ログイン中IDと同名（ランク接頭辞除去・大文字小文字無視）なら自分の記録
+ // ログイン導入前の WORLD TOP 記録を、同名IDのプレイヤー記録として扱う
  const base=basePlayerName(name).toLowerCase();
  const me=String(PN||'').trim().toLowerCase();
- return !!(base&&me&&base===me);
+ if(!base||!me)return false;
+ if(base===me)return true;
+ // WORLD TOP は表示名を12文字に切っていることがある
+ if(base.length>=12&&me.startsWith(base.slice(0,12)))return true;
+ if(me.length>=12&&base.startsWith(me.slice(0,12)))return true;
+ return false;
 }
 function currentRankLabelFor(name,list,isMe){
  // 自分は常に現在の最高到達（towerBest）を表示

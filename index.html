@@ -114,6 +114,7 @@ background:transparent;color:inherit;border:1px solid var(--line);border-radius:
 </div>
 <div class="screen" id="top">
  <div class="link" id="who" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;font-size:10px;opacity:.4;margin:0"></div>
+ <div class="link" id="topLogout" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;margin-top:18px;font-size:9px;opacity:.35;letter-spacing:.14em;display:none">LOGOUT</div>
  <button id="thm" type="button" aria-label="ライト/ダーク切り替え"><svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></svg><svg class="moon" viewBox="0 0 24 24"><path d="M20.5 13.4A8.6 8.6 0 1 1 10.6 3.5a6.9 6.9 0 0 0 9.9 9.9z"/></svg></button>
  <h1 id="titleH1">PRIME</h1><div class="sub" style="margin:12px 0 28px .3em">47 SECONDS</div>
  <div class="lab" style="margin:0 0 4px .3em">LEVEL</div><div class="lv" id="lvT" style="margin-bottom:28px"></div>
@@ -712,6 +713,7 @@ function enterApp(opts){
  stopCpuVis&&stopCpuVis();
  gameEl.classList.remove('intro');
  $('who').textContent=displayName();paintNameEl($('who'),1);applyTitleTheme();
+ refreshLogoutBtn();
  // リロード時のセッション復元はイントロを飛ばしてTOPへ（レイアウト崩れ防止）
  if(opts&&opts.skipIntro){
   state='top';show('top');
@@ -756,9 +758,10 @@ async function doAuth(mode){
 }
 function goTop(){/* legacy */enterApp()}
 function refreshLogoutBtn(){
- const b=$('authLogout');
- if(!b)return;
- b.style.display=authToken?'':'none';
+ const on=!!authToken;
+ const a=$('authLogout'),t=$('topLogout');
+ if(a)a.style.display=on?'':'none';
+ if(t)t.style.display=on?'':'none';
 }
 async function doLogout(){
  if(authBusy)return;
@@ -780,6 +783,7 @@ async function doLogout(){
 $('authLogin').onclick=()=>doAuth('login');
 $('authReg').onclick=()=>doAuth('register');
 $('authLogout').onclick=()=>doLogout();
+$('topLogout').onclick=()=>doLogout();
 nm.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();pw.focus()}});
 pw.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();doAuth('login')}});
 $('who').onclick=()=>{introStop();state='name';show('name');authMsg('');refreshLogoutBtn();nm.focus()};

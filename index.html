@@ -879,6 +879,16 @@ async function doResetPass(){
  }catch(e){authBusy=0;authMsg('RESET FAILED')}
 }
 // 現在の進捗をログイン中アカウントへ保存
+function progressFingerprint(d){
+ if(!d||typeof d!=='object')return '';
+ const mine=d.mine||{};
+ const parts=[d.towerBest|0,d.theme||'',d.name||''];
+ for(let l=1;l<=5;l++){
+  const list=Array.isArray(mine[l])?mine[l]:[];
+  parts.push(list.map(x=>(x&&x.s)+':'+(x&&x.t)).join(','));
+ }
+ return parts.join('|');
+}
 async function saveAccountProgress(){
  if(!authToken)return;
  const data=collectProgress();
@@ -890,6 +900,7 @@ async function saveAccountProgress(){
   }catch(e){}
   return;
  }
+ // サーバーアカウント: 複数端末で同じトークン／別トークンどちらでも同期可能
  try{await call('auth/sync',{token:authToken,data})}catch(e){}}
 async function pullAccountProgress(){
  if(!authToken)return;
@@ -901,9 +912,31 @@ async function pullAccountProgress(){
   }catch(e){}
   return;
  }
- try{const r=await call('auth/pull',{token:authToken});if(r&&r.data)loadAccountProgress(r.data)}catch(e){}}
+ try{
+  const r=await call('auth/pull',{token:authToken});
+  if(r&&r.data){
+   // 端末の進捗とサーバーを統合（高い方・スコア合算）→ 複数端末対応
+   const browser=collectProgress();
+   const merged=mergeProgress(r.data,browser);
+   loadAccountProgress(merged);
+   // 統合結果がサーバーより進んでいれば書き戻し（他端末へ反映）
+   if(progressFingerprint(merged)!==progressFingerprint(r.data)){
+    try{await call('auth/sync',{token:authToken,data:merged})}catch(e){}
+   }
+  }
+ }catch(e){}}
 const pushSync=()=>saveAccountProgress();
 const pullSync=()=>pullAccountProgress();
+// 複数端末: フォアグラウンド復帰・定期でサーバーと双方向同期
+let syncBusy=0;
+async function multiDeviceSync(){
+ if(!authToken||String(authToken).startsWith('local_')||syncBusy)return;
+ syncBusy=1;
+ try{await pullAccountProgress()}catch(e){}
+ syncBusy=0;
+}
+setInterval(multiDeviceSync,3*60*1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)multiDeviceSync()});
 function enterApp(opts){
  navAt=performance.now();
  introStop();

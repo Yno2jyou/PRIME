@@ -109,6 +109,7 @@ background:transparent;color:inherit;border:1px solid var(--line);border-radius:
    <div class="link" id="authLogin" style="font-size:11px">LOGIN</div>
    <div class="link" id="authReg" style="font-size:11px;opacity:.5">REGISTER</div>
   </div>
+  <div class="link" id="authLogout" style="font-size:10px;opacity:.4;margin-top:18px;display:none">LOGOUT</div>
  </div>
 </div>
 <div class="screen" id="top">
@@ -745,7 +746,7 @@ async function doAuth(mode){
   try{localStorage.setItem('prime_token',authToken);localStorage.setItem('prime_uid',id)}catch(e){}
   loadAccountProgress(r.data||mergeProgress(emptyProgress(id),browserProgress));
   await saveAccountProgress();
-  authMsg('');pw.value='';authBusy=0;enterApp();
+  authMsg('');pw.value='';authBusy=0;refreshLogoutBtn();enterApp();
  }catch(e){
   authBusy=0;
   if(e&&e.code===409)authMsg('ID TAKEN');
@@ -754,11 +755,34 @@ async function doAuth(mode){
  }
 }
 function goTop(){/* legacy */enterApp()}
+function refreshLogoutBtn(){
+ const b=$('authLogout');
+ if(!b)return;
+ b.style.display=authToken?'':'none';
+}
+async function doLogout(){
+ if(authBusy)return;
+ // ログアウト前に現在の進捗をアカウントへ保存
+ try{await saveAccountProgress()}catch(e){}
+ authToken='';
+ try{
+  localStorage.removeItem('prime_token');
+  // uid は残してもよいがセッションは切る
+ }catch(e){}
+ pw.value='';
+ authMsg('LOGGED OUT');
+ refreshLogoutBtn();
+ $('who').textContent='';
+ // タイトル色などはアカウント依存のためリセットはしない（再ログインで復元）
+ state='name';show('name');
+ nm.focus();
+}
 $('authLogin').onclick=()=>doAuth('login');
 $('authReg').onclick=()=>doAuth('register');
+$('authLogout').onclick=()=>doLogout();
 nm.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();pw.focus()}});
 pw.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();doAuth('login')}});
-$('who').onclick=()=>{introStop();state='name';show('name');authMsg('');nm.focus()};
+$('who').onclick=()=>{introStop();state='name';show('name');authMsg('');refreshLogoutBtn();nm.focus()};
 addEventListener('load',async()=>{
  nm.value=PN;
  if(authToken){
@@ -777,6 +801,7 @@ addEventListener('load',async()=>{
   }
  }
  state='name';show('name');
+ refreshLogoutBtn();
  nm.focus();
 });
 function mkLv(el,get,set){el.textContent='';for(let i=1;i<=5;i++){const x=document.createElement('span');x.textContent=i;if(i===get())x.className='on';

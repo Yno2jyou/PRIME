@@ -109,6 +109,7 @@ background:transparent;color:inherit;border:1px solid var(--line);border-radius:
    <div class="link" id="authLogin" style="font-size:11px">LOGIN</div>
    <div class="link" id="authReg" style="font-size:11px;opacity:.5">REGISTER</div>
   </div>
+  <div class="link" id="authReset" style="font-size:10px;opacity:.4;margin-top:14px;display:none">RESET PASS</div>
   <div class="link" id="authLogout" style="font-size:10px;opacity:.4;margin-top:18px;display:none">LOGOUT</div>
  </div>
 </div>
@@ -609,6 +610,28 @@ async function sha256(s){
  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
+// 過去の大文字小文字違いで作られたハッシュも照合する
+async function passHashVariants(id,pass){
+ const raw=(nm&&nm.value?nm.value:id).trim().slice(0,16);
+ const variants=new Set([
+  normId(id),
+  raw,
+  raw.toLowerCase(),
+  raw.toUpperCase(),
+  raw.charAt(0).toUpperCase()+raw.slice(1).toLowerCase(),
+  'Yno2jyou','yno2jyou','YNO2JYOU' // 既知の問題ID
+ ]);
+ const out=[];
+ for(const v of variants){
+  if(!v)continue;
+  out.push(await sha256(v+':'+pass));
+ }
+ return [...new Set(out)];
+}
+async function anyHashMatch(rec,id,pass){
+ const variants=await passHashVariants(id,pass);
+ return variants.find(h=>hashMatch(rec,h))||null;
+}
 function emptyProgress(name){
  return{name:name||'ANON',towerBest:0,theme:'light',mine:{1:[],2:[],3:[],4:[],5:[]},ts:Date.now()};
 }
@@ -704,15 +727,16 @@ function findLocalUser(id){
  const users=localUsers(),key=normId(id);
  return{users,key,rec:users[key]||null};
 }
-async function doAuthLocal(mode,id,hash,browserProgress){
- // 起動時に重複を必ず整理
+async function doAuthLocal(mode,id,pass,browserProgress){
  const{users,key,rec}=findLocalUser(id);
+ const canonHash=await sha256(key+':'+pass);
  if(mode==='register'){
   if(rec){
-   if(hashMatch(rec,hash)){
+   const matched=await anyHashMatch(rec,id,pass);
+   if(matched){
     const data=mergeProgress(rec.data||emptyProgress(key),browserProgress);
     data.name=key;
-    rec.data=data;rec.hash=hash;rec.hashes=[hash];
+    rec.data=data;rec.hash=canonHash;rec.hashes=[canonHash];
     users[key]=rec;saveLocalUsers(users);
     return{token:rec.token,data,local:1};
    }
@@ -721,18 +745,46 @@ async function doAuthLocal(mode,id,hash,browserProgress){
   const token='local_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
   const data=mergeProgress(emptyProgress(key),browserProgress);
   data.name=key;
-  users[key]={hash,hashes:[hash],token,data};saveLocalUsers(users);
+  users[key]={hash:canonHash,hashes:[canonHash],token,data};saveLocalUsers(users);
   return{token,data,local:1};
  }
- // LOGIN: 重複で残ったどのパスワードでも通す → 成功したらそのパスワードに一本化
- if(!rec||!hashMatch(rec,hash)){const e=new Error('auth');e.code=401;throw e}
+ // LOGIN
+ if(!rec){const e=new Error('auth');e.code=401;throw e}
+ const matched=await anyHashMatch(rec,id,pass);
+ if(!matched){const e=new Error('auth');e.code=401;e.idExists=1;throw e}
  const data=mergeProgress(rec.data||emptyProgress(key),browserProgress);
  data.name=key;
  rec.data=data;
- rec.hash=hash;
- rec.hashes=[hash]; // 使えたパスワードだけ残す
+ rec.hash=canonHash;
+ rec.hashes=[canonHash];
  users[key]=rec;saveLocalUsers(users);
  return{token:rec.token,data,local:1};
+}
+// ローカルアカウントのパスワード再設定（進捗は維持）
+async function doResetPass(){
+ if(authBusy)return;authBusy=1;
+ const id=normId(nm.value);
+ const pass=pw.value||'';
+ if(!id||id.length<2){authMsg('ID 2+ CHARS');authBusy=0;return}
+ if(!pass||pass.length<4){authMsg('PASS 4+ CHARS');authBusy=0;return}
+ const{users,key,rec}=findLocalUser(id);
+ if(!rec){authMsg('NO LOCAL ACCOUNT');authBusy=0;return}
+ authMsg('RESET…');
+ try{
+  const browserProgress=collectProgress();
+  const canonHash=await sha256(key+':'+pass);
+  const data=mergeProgress(rec.data||emptyProgress(key),browserProgress);
+  data.name=key;
+  rec.hash=canonHash;rec.hashes=[canonHash];rec.data=data;
+  users[key]=rec;saveLocalUsers(users);
+  authToken=rec.token||('local_'+key);
+  try{localStorage.setItem('prime_token',authToken);localStorage.setItem('prime_uid',key)}catch(e){}
+  loadAccountProgress(data);
+  await saveAccountProgress();
+  authMsg('PASS UPDATED');pw.value='';authBusy=0;refreshLogoutBtn();
+  $('authReset').style.display='none';
+  enterApp();
+ }catch(e){authBusy=0;authMsg('RESET FAILED')}
 }
 // 現在の進捗をログイン中アカウントへ保存
 async function saveAccountProgress(){
@@ -782,14 +834,15 @@ async function doAuth(mode){
  if(!id||id.length<2){authMsg('ID 2+ CHARS');authBusy=0;return}
  if(!pass||pass.length<4){authMsg('PASS 4+ CHARS');authBusy=0;return}
  authMsg(mode==='register'?'REGISTER…':'LOGIN…');
+ $('authReset').style.display='none';
  try{
   const browserProgress=collectProgress();
   const hash=await sha256(id+':'+pass);
   let r;
-  // ローカルに同じID+パスワードがあれば、REGISTERでもLOGIN扱いにする
+  // ローカルにパスワード一致があれば REGISTER でも LOGIN 扱い
   if(mode==='register'){
    const{rec}=findLocalUser(id);
-   if(rec&&rec.hash===hash)mode='login';
+   if(rec&&await anyHashMatch(rec,id,pass))mode='login';
   }
   try{
    r=await call(mode==='register'?'auth/register':'auth/login',{id,hash});
@@ -798,17 +851,16 @@ async function doAuth(mode){
    r.data.name=id;
   }catch(e){
    if(e&&e.code===409){
-    // サーバーでID使用中 → 同じパスワードならログインを試す
     try{
      r=await call('auth/login',{id,hash});
      r.data=mergeProgress(r.data||emptyProgress(id),browserProgress);
      r.data.name=id;
     }catch(e2){
-     if(e2&&(e2.code===404||e2.code===405))r=await doAuthLocal('register',id,hash,browserProgress);
-     else throw e; // 本当にID TAKEN
+     if(e2&&(e2.code===404||e2.code===405))r=await doAuthLocal('register',id,pass,browserProgress);
+     else throw e;
     }
    }else if(e&&(e.code===404||e.code===405)){
-    r=await doAuthLocal(mode,id,hash,browserProgress);
+    r=await doAuthLocal(mode,id,pass,browserProgress);
    }else throw e;
   }
   authToken=r.token||'';
@@ -819,8 +871,12 @@ async function doAuth(mode){
  }catch(e){
   authBusy=0;
   if(e&&e.code===409)authMsg('ID TAKEN');
-  else if(e&&e.code===401)authMsg('WRONG ID / PASS');
-  else authMsg('OFFLINE'+(e&&e.code?' · '+e.code:''));
+  else if(e&&e.code===401){
+   authMsg('WRONG ID / PASS');
+   // ローカルにIDがあるならパスワード再設定を案内
+   const{rec}=findLocalUser(id);
+   if(rec)$('authReset').style.display='';
+  }else authMsg('OFFLINE'+(e&&e.code?' · '+e.code:''));
  }
 }
 function goTop(){/* legacy */enterApp()}
@@ -849,6 +905,7 @@ async function doLogout(){
 }
 $('authLogin').onclick=()=>doAuth('login');
 $('authReg').onclick=()=>doAuth('register');
+$('authReset').onclick=()=>doResetPass();
 $('authLogout').onclick=()=>doLogout();
 $('topLogout').onclick=()=>doLogout();
 nm.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();pw.focus()}});

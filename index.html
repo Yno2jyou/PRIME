@@ -653,35 +653,60 @@ function loadAccountProgress(d){
   try{localStorage.setItem(LK(l),JSON.stringify(list.slice(0,5)))}catch(e){}
  }
 }
-function localUsers(){try{return JSON.parse(localStorage.getItem('prime_users')||'{}')}catch(e){return{}}}
-function saveLocalUsers(u){try{localStorage.setItem('prime_users',JSON.stringify(u))}catch(e){}}
 function normId(id){return String(id||'').trim().slice(0,16).toLowerCase()}
-function localIdExists(id){
- const u=localUsers(),k=normId(id);
- if(u[k])return true;
- // 大文字小文字違いの旧データも重複扱い
- return Object.keys(u).some(x=>normId(x)===k);
+// ローカルアカウントを正規化（大文字小文字違いの重複キーを1つにまとめる）
+function localUsers(){
+ let raw={};
+ try{raw=JSON.parse(localStorage.getItem('prime_users')||'{}')}catch(e){raw={}}
+ const out={};
+ let changed=false;
+ for(const k of Object.keys(raw)){
+  const nk=normId(k);
+  if(!nk){changed=true;continue}
+  if(!out[nk]){out[nk]=raw[k];if(k!==nk)changed=true}
+  else{
+   // 同一IDの重複キー → 進捗はマージ、ハッシュは先勝ち
+   changed=true;
+   const a=out[nk],b=raw[k];
+   if(a&&b){
+    a.data=mergeProgress(a.data||{},b.data||{});
+    if(!a.hash&&b.hash)a.hash=b.hash;
+    if(!a.token&&b.token)a.token=b.token;
+   }
+  }
+ }
+ if(changed)try{localStorage.setItem('prime_users',JSON.stringify(out))}catch(e){}
+ return out;
+}
+function saveLocalUsers(u){try{localStorage.setItem('prime_users',JSON.stringify(u))}catch(e){}}
+function findLocalUser(id){
+ const users=localUsers(),key=normId(id);
+ return{users,key,rec:users[key]||null};
 }
 async function doAuthLocal(mode,id,hash,browserProgress){
- const users=localUsers();
- const key=normId(id);
+ const{users,key,rec}=findLocalUser(id);
  if(mode==='register'){
-  // 同一IDでの再登録は不可（パスワードが同じでも不可）
-  if(localIdExists(key)){const e=new Error('taken');e.code=409;throw e}
+  if(rec){
+   // 同じパスワードならログイン扱い（新規登録はしない）
+   if(rec.hash===hash){
+    const data=mergeProgress(rec.data||emptyProgress(key),browserProgress);
+    data.name=key;rec.data=data;users[key]=rec;saveLocalUsers(users);
+    return{token:rec.token,data,local:1};
+   }
+   // 別パスワードで同じID → 拒否
+   const e=new Error('taken');e.code=409;throw e;
+  }
+  // 本当に新規
   const token='local_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
   const data=mergeProgress(emptyProgress(key),browserProgress);
   data.name=key;
   users[key]={hash,token,data};saveLocalUsers(users);
   return{token,data,local:1};
  }
- const rec=users[key]||users[id];
+ // LOGIN
  if(!rec||rec.hash!==hash){const e=new Error('auth');e.code=401;throw e}
  const data=mergeProgress(rec.data||emptyProgress(key),browserProgress);
- data.name=key;
- rec.data=data;
- // キーを正規化して保存し直す
- if(!users[key]){users[key]=rec;if(id!==key)delete users[id]}
- saveLocalUsers(users);
+ data.name=key;rec.data=data;users[key]=rec;saveLocalUsers(users);
  return{token:rec.token,data,local:1};
 }
 // 現在の進捗をログイン中アカウントへ保存
@@ -689,20 +714,25 @@ async function saveAccountProgress(){
  if(!authToken)return;
  const data=collectProgress();
  if(String(authToken).startsWith('local_')){
-  try{const users=localUsers(),uid=localStorage.getItem('prime_uid');
-   if(uid&&users[uid]){users[uid].data=data;saveLocalUsers(users)}}catch(e){}
+  try{
+   const uid=normId(localStorage.getItem('prime_uid')||'');
+   const users=localUsers();
+   if(uid&&users[uid]){users[uid].data=data;saveLocalUsers(users)}
+  }catch(e){}
   return;
  }
  try{await call('auth/sync',{token:authToken,data})}catch(e){}}
 async function pullAccountProgress(){
  if(!authToken)return;
  if(String(authToken).startsWith('local_')){
-  try{const users=localUsers(),uid=localStorage.getItem('prime_uid');
-   if(uid&&users[uid])loadAccountProgress(users[uid].data||emptyProgress(uid))}catch(e){}
+  try{
+   const uid=normId(localStorage.getItem('prime_uid')||'');
+   const users=localUsers();
+   if(uid&&users[uid])loadAccountProgress(users[uid].data||emptyProgress(uid));
+  }catch(e){}
   return;
  }
  try{const r=await call('auth/pull',{token:authToken});if(r&&r.data)loadAccountProgress(r.data)}catch(e){}}
-// 旧名の互換
 const pushSync=()=>saveAccountProgress();
 const pullSync=()=>pullAccountProgress();
 function enterApp(opts){
@@ -714,7 +744,6 @@ function enterApp(opts){
  gameEl.classList.remove('intro');
  $('who').textContent=displayName();paintNameEl($('who'),1);applyTitleTheme();
  refreshLogoutBtn();
- // リロード時のセッション復元はイントロを飛ばしてTOPへ（レイアウト崩れ防止）
  if(opts&&opts.skipIntro){
   state='top';show('top');
   return;
@@ -727,22 +756,35 @@ async function doAuth(mode){
  const pass=pw.value||'';
  if(!id||id.length<2){authMsg('ID 2+ CHARS');authBusy=0;return}
  if(!pass||pass.length<4){authMsg('PASS 4+ CHARS');authBusy=0;return}
- // ローカルに既にあるIDは登録不可（サーバー未接続時の二重登録防止）
- if(mode==='register'&&localIdExists(id)){authMsg('ID TAKEN');authBusy=0;return}
  authMsg(mode==='register'?'REGISTER…':'LOGIN…');
  try{
   const browserProgress=collectProgress();
   const hash=await sha256(id+':'+pass);
   let r;
+  // ローカルに同じID+パスワードがあれば、REGISTERでもLOGIN扱いにする
+  if(mode==='register'){
+   const{rec}=findLocalUser(id);
+   if(rec&&rec.hash===hash)mode='login';
+  }
   try{
    r=await call(mode==='register'?'auth/register':'auth/login',{id,hash});
    if(mode==='register'&&r&&r.error==='taken'){const e=new Error('taken');e.code=409;throw e}
    r.data=mergeProgress(r.data||emptyProgress(id),browserProgress);
    r.data.name=id;
   }catch(e){
-   if(e&&e.code===409)throw e;
-   if(e&&(e.code===404||e.code===405))r=await doAuthLocal(mode,id,hash,browserProgress);
-   else throw e;
+   if(e&&e.code===409){
+    // サーバーでID使用中 → 同じパスワードならログインを試す
+    try{
+     r=await call('auth/login',{id,hash});
+     r.data=mergeProgress(r.data||emptyProgress(id),browserProgress);
+     r.data.name=id;
+    }catch(e2){
+     if(e2&&(e2.code===404||e2.code===405))r=await doAuthLocal('register',id,hash,browserProgress);
+     else throw e; // 本当にID TAKEN
+    }
+   }else if(e&&(e.code===404||e.code===405)){
+    r=await doAuthLocal(mode,id,hash,browserProgress);
+   }else throw e;
   }
   authToken=r.token||'';
   try{localStorage.setItem('prime_token',authToken);localStorage.setItem('prime_uid',id)}catch(e){}

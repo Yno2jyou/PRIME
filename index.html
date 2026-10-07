@@ -574,11 +574,30 @@ function submit(){
 }
 const fd=t=>{const d=new Date(t),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())};
 function nameThemeClass(){const t=titleThemeOf(towerBest);return t?'name-'+t:''}
-function paintNameEl(e,force){
+// 名前先頭のランク記号（Z1 / α3 / ∞ 等）から色テーマを判定 — 他プレイヤーのランキングにも反映
+function themeFromName(name){
+ const s=String(name||'').trim();
+ if(!s)return '';
+ // ∞ / Ω は1文字、それ以外はギリシャ文字 or Z + 任意の数字
+ const m=s.match(/^([ZαβγδεζηθΩ∞])/);
+ if(!m)return '';
+ const sym=m[1];
+ if(sym==='∞')return 'rainbow';
+ if(sym==='Ω'||sym==='θ')return 'gold';
+ if(sym==='η'||sym==='ζ')return 'red';
+ if(sym==='ε'||sym==='δ')return 'purple';
+ if(sym==='γ'||sym==='β')return 'blue';
+ if(sym==='α'||sym==='Z')return 'gray';
+ return '';
+}
+function paintNameEl(e,force,nameText){
  if(!e)return;
  ['name-gray','name-blue','name-purple','name-red','name-gold','name-rainbow'].forEach(c=>e.classList.remove(c));
- const t=titleThemeOf(towerBest);
- if((force||e.dataset.me==='1')&&t)e.classList.add('name-'+t);
+ // 自分: towerBest / 他人: 名前のランク記号から
+ let t='';
+ if(force||e.dataset.me==='1')t=titleThemeOf(towerBest);
+ if(!t)t=themeFromName(nameText!=null?nameText:e.textContent);
+ if(t)e.classList.add('name-'+t);
 }
 function rows(el,list){
  el.textContent='';
@@ -588,7 +607,10 @@ function rows(el,list){
   [['em',i+1],['u',x.n||'—'],['b',x.s],['span',fd(x.t)]].forEach(([k,v])=>{
    const e=document.createElement(k);e.textContent=v;
    if(x.me&&k==='b')e.style.fontWeight=600;
-   if(k==='u'&&(x.me||localMine)){e.dataset.me='1';paintNameEl(e,1)}
+   if(k==='u'){
+    if(x.me||localMine)e.dataset.me='1';
+    paintNameEl(e,!!(x.me||localMine),x.n||'');
+   }
    r.appendChild(e)});el.appendChild(r)});
 }
 async function openBoard(){

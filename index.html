@@ -820,17 +820,8 @@ async function doAuthLocal(mode,id,pass,browserProgress,dispName){
  const canonHash=await sha256(key+':'+pass);
  const shown=preferName(dispName,key);
  if(mode==='register'){
-  if(rec){
-   const matched=await anyHashMatch(rec,id,pass);
-   if(matched){
-    const data=mergeProgress(rec.data||emptyProgress(key),browserProgress);
-    data.name=preferName(shown,data.name);
-    rec.data=data;rec.hash=canonHash;rec.hashes=[canonHash];
-    users[key]=rec;saveLocalUsers(users);
-    return{token:rec.token,data,local:1};
-   }
-   const e=new Error('taken');e.code=409;throw e;
-  }
+  // 同じIDは新規登録不可（パスワード一致でも拒否）
+  if(rec){const e=new Error('taken');e.code=409;throw e}
   const token='local_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
   const data=mergeProgress(emptyProgress(key),browserProgress);
   data.name=shown;
@@ -930,10 +921,10 @@ async function doAuth(mode){
   // サーバー照合用: 正規化IDのハッシュ（大文字小文字どちらでも同じキー）
   const hash=await sha256(id+':'+pass);
   let r;
-  // ローカルにパスワード一致があれば REGISTER でも LOGIN 扱い
+  // 新規登録: ローカルに同じIDがあれば即拒否（LOGIN に切り替えない）
   if(mode==='register'){
    const{rec}=findLocalUser(id);
-   if(rec&&await anyHashMatch(rec,id,pass))mode='login';
+   if(rec){authBusy=0;authMsg('ID TAKEN');return}
   }
   try{
    r=await call(mode==='register'?'auth/register':'auth/login',{id,hash});
@@ -942,14 +933,10 @@ async function doAuth(mode){
    r.data.name=preferName(disp,r.data.name||id);
   }catch(e){
    if(e&&e.code===409){
-    try{
-     r=await call('auth/login',{id,hash});
-     r.data=mergeProgress(r.data||emptyProgress(id),browserProgress);
-     r.data.name=preferName(disp,r.data.name||id);
-    }catch(e2){
-     if(e2&&(e2.code===404||e2.code===405))r=await doAuthLocal('register',id,pass,browserProgress,disp);
-     else throw e;
-    }
+    // 同じIDは新規登録不可
+    if(mode==='register')throw e;
+    // LOGIN 経路での 409 は想定外 → そのままエラー
+    throw e;
    }else if(e&&(e.code===404||e.code===405)){
     r=await doAuthLocal(mode,id,pass,browserProgress,disp);
    }else throw e;

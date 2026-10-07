@@ -727,7 +727,7 @@ function mergeProgress(account,browser){
   mine[l]=[...map.values()].sort((x,y)=>y.s-x.s).slice(0,5);
  }
  return{
-  name:a.name||b.name||'ANON',
+  name:preferName(a.name,b.name)||'ANON',
   towerBest:Math.max(+a.towerBest||0,+b.towerBest||0),
   theme:a.theme||b.theme||'light',
   mine,
@@ -752,6 +752,19 @@ function loadAccountProgress(d){
  }
 }
 function normId(id){return String(id||'').trim().slice(0,16).toLowerCase()}
+// 表示用ID: 入力の大文字小文字を保持（認証キーは normId で小文字統一）
+function typedId(){return String(nm&&nm.value?nm.value:'').trim().slice(0,16)}
+function preferName(a,b){
+ const A=String(a||'').trim().slice(0,16),B=String(b||'').trim().slice(0,16);
+ if(!A)return B;if(!B)return A;
+ if(A.toLowerCase()!==B.toLowerCase())return A;
+ // 同一IDなら大文字を含む表記を優先（ユーザーが入力した見た目を残す）
+ if(A!==A.toLowerCase()&&A!==A.toUpperCase())return A; // 混在
+ if(B!==B.toLowerCase()&&B!==B.toUpperCase())return B;
+ if(A!==A.toLowerCase())return A; // 大文字あり
+ if(B!==B.toLowerCase())return B;
+ return A;
+}
 function towerOf(rec){return Math.max(0,+((rec&&rec.data&&rec.data.towerBest)||0))}
 function hashList(rec){
  const s=new Set();
@@ -789,7 +802,7 @@ function localUsers(){
    hashList(o).forEach(h=>{if(!hashes.includes(h))hashes.push(h)});
    if(!token&&o.token)token=o.token;
   }
-  data.name=nk;
+  data.name=preferName(data.name,nk);
   // メインhashは進捗最多アカウントのもの、hashesに全部
   out[nk]={hash:hashes[0]||primary.hash,hashes,token:token||('local_'+nk),data};
   if(list.length>1)changed=true;
@@ -802,15 +815,16 @@ function findLocalUser(id){
  const users=localUsers(),key=normId(id);
  return{users,key,rec:users[key]||null};
 }
-async function doAuthLocal(mode,id,pass,browserProgress){
+async function doAuthLocal(mode,id,pass,browserProgress,dispName){
  const{users,key,rec}=findLocalUser(id);
  const canonHash=await sha256(key+':'+pass);
+ const shown=preferName(dispName,key);
  if(mode==='register'){
   if(rec){
    const matched=await anyHashMatch(rec,id,pass);
    if(matched){
     const data=mergeProgress(rec.data||emptyProgress(key),browserProgress);
-    data.name=key;
+    data.name=preferName(shown,data.name);
     rec.data=data;rec.hash=canonHash;rec.hashes=[canonHash];
     users[key]=rec;saveLocalUsers(users);
     return{token:rec.token,data,local:1};
@@ -819,7 +833,7 @@ async function doAuthLocal(mode,id,pass,browserProgress){
   }
   const token='local_'+Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
   const data=mergeProgress(emptyProgress(key),browserProgress);
-  data.name=key;
+  data.name=shown;
   users[key]={hash:canonHash,hashes:[canonHash],token,data};saveLocalUsers(users);
   return{token,data,local:1};
  }
@@ -828,7 +842,7 @@ async function doAuthLocal(mode,id,pass,browserProgress){
  const matched=await anyHashMatch(rec,id,pass);
  if(!matched){const e=new Error('auth');e.code=401;e.idExists=1;throw e}
  const data=mergeProgress(rec.data||emptyProgress(key),browserProgress);
- data.name=key;
+ data.name=preferName(shown,data.name);
  rec.data=data;
  rec.hash=canonHash;
  rec.hashes=[canonHash];
@@ -849,7 +863,7 @@ async function doResetPass(){
   const browserProgress=collectProgress();
   const canonHash=await sha256(key+':'+pass);
   const data=mergeProgress(rec.data||emptyProgress(key),browserProgress);
-  data.name=key;
+  data.name=preferName(typedId(),preferName(data.name,key));
   rec.hash=canonHash;rec.hashes=[canonHash];rec.data=data;
   users[key]=rec;saveLocalUsers(users);
   authToken=rec.token||('local_'+key);
@@ -904,7 +918,8 @@ function enterApp(opts){
 }
 async function doAuth(mode){
  if(authBusy)return;authBusy=1;
- const id=normId(nm.value);
+ const disp=typedId();
+ const id=normId(disp);
  const pass=pw.value||'';
  if(!id||id.length<2){authMsg('ID 2+ CHARS');authBusy=0;return}
  if(!pass||pass.length<4){authMsg('PASS 4+ CHARS');authBusy=0;return}
@@ -912,6 +927,7 @@ async function doAuth(mode){
  $('authReset').style.display='none';
  try{
   const browserProgress=collectProgress();
+  // サーバー照合用: 正規化IDのハッシュ（大文字小文字どちらでも同じキー）
   const hash=await sha256(id+':'+pass);
   let r;
   // ローカルにパスワード一致があれば REGISTER でも LOGIN 扱い
@@ -923,24 +939,26 @@ async function doAuth(mode){
    r=await call(mode==='register'?'auth/register':'auth/login',{id,hash});
    if(mode==='register'&&r&&r.error==='taken'){const e=new Error('taken');e.code=409;throw e}
    r.data=mergeProgress(r.data||emptyProgress(id),browserProgress);
-   r.data.name=id;
+   r.data.name=preferName(disp,r.data.name||id);
   }catch(e){
    if(e&&e.code===409){
     try{
      r=await call('auth/login',{id,hash});
      r.data=mergeProgress(r.data||emptyProgress(id),browserProgress);
-     r.data.name=id;
+     r.data.name=preferName(disp,r.data.name||id);
     }catch(e2){
-     if(e2&&(e2.code===404||e2.code===405))r=await doAuthLocal('register',id,pass,browserProgress);
+     if(e2&&(e2.code===404||e2.code===405))r=await doAuthLocal('register',id,pass,browserProgress,disp);
      else throw e;
     }
    }else if(e&&(e.code===404||e.code===405)){
-    r=await doAuthLocal(mode,id,pass,browserProgress);
+    r=await doAuthLocal(mode,id,pass,browserProgress,disp);
    }else throw e;
   }
   authToken=r.token||'';
   try{localStorage.setItem('prime_token',authToken);localStorage.setItem('prime_uid',id)}catch(e){}
   loadAccountProgress(r.data||mergeProgress(emptyProgress(id),browserProgress));
+  // 表示名は入力の大文字小文字を優先
+  if(disp){PN=preferName(disp,PN);try{localStorage.setItem('prime_name',PN)}catch(e){}}
   await saveAccountProgress();
   authMsg('');pw.value='';authBusy=0;refreshLogoutBtn();enterApp();
  }catch(e){

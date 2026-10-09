@@ -97,7 +97,10 @@ transition:transform .17s cubic-bezier(.2,.8,.2,1),font-size .17s cubic-bezier(.
 /* ---- THEME BUTTON (TOPのみ) ---- */
 #thm{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:14px;width:40px;height:40px;padding:0;display:grid;place-items:center;
 background:transparent;color:inherit;border:1px solid var(--line);border-radius:9px;cursor:pointer;opacity:.5;font:inherit;outline:0;touch-action:manipulation}
-#thm:active{opacity:1}
+#thm:active,#snd:active{opacity:1}
+#snd{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:62px;width:40px;height:40px;padding:0;display:grid;place-items:center;background:transparent;color:inherit;border:1px solid var(--line);border-radius:9px;cursor:pointer;opacity:.5;font:inherit;outline:0;touch-action:manipulation}
+#snd svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#snd .off{display:none}#snd.m .off{display:block}#snd.m .on{display:none}
 #thm svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 #thm .moon{display:none}:root[data-theme="dark"] #thm .sun{display:none}:root[data-theme="dark"] #thm .moon{display:block}
 /* ---- NO MISS / RANK UNDERLINE ---- */
@@ -140,6 +143,7 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
 <div class="screen" id="top">
  <div class="link" id="who" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;font-size:10px;opacity:.4;margin:0"></div>
  <div class="link" id="topLogout" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;margin-top:18px;font-size:9px;opacity:.35;letter-spacing:.14em;display:none">LOGOUT</div>
+ <button id="snd" type="button" aria-label="音声 ON/OFF"><svg class="on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="off" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/><path d="M3 3l18 18"/></svg></button>
  <button id="thm" type="button" aria-label="ライト/ダーク切り替え"><svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></svg><svg class="moon" viewBox="0 0 24 24"><path d="M20.5 13.4A8.6 8.6 0 1 1 10.6 3.5a6.9 6.9 0 0 0 9.9 9.9z"/></svg></button>
  <h1 id="titleH1">PRIME</h1><div class="sub" style="margin:12px 0 28px .3em">47 SECONDS</div>
  <div class="lab" style="margin:0 0 4px .3em">LEVEL</div><div class="lv" id="lvT" style="margin-bottom:28px"></div>
@@ -303,9 +307,9 @@ function replay(seed,level,ops){
 if(typeof module!=='undefined')module.exports={mult,DUR,MINGAP,replay,mulberry32,gen,split,isP,penOf,pv,CLEAN_BONUS,sr};
 let LV=1,bLV=1,roomT=0,LVkeep=0,roomCtx=null,urlRoom=(new URLSearchParams(location.search).get('room')||'').replace(/\D/g,'').slice(0,4),rankP=null,spl=0,rnd=Math.random,seed=0,sid=null,ops=[],lastOp=-1e9,last=0,pen=0;
 // ---------- audio ----------
-let AC,MB;
+let AC,MB;var SG,SFXM=0;
 function ac(){if(!AC){AC=new(window.AudioContext||window.webkitAudioContext)();
- const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=5200;const g=AC.createGain();g.gain.value=1.7;const cp=AC.createDynamicsCompressor();cp.threshold.value=-12;cp.knee.value=10;cp.ratio.value=6;cp.attack.value=.003;cp.release.value=.2;
+ const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=5200;const g=AC.createGain();SG=g;g.gain.value=SFXM?0:4.2;const cp=AC.createDynamicsCompressor();cp.threshold.value=-12;cp.knee.value=10;cp.ratio.value=6;cp.attack.value=.003;cp.release.value=.2;
  const dl=AC.createDelay();dl.delayTime.value=.12;const fb=AC.createGain();fb.gain.value=.22;const wet=AC.createGain();wet.gain.value=.22;
  MB=AC.createGain();MB.connect(lp);MB.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(lp);lp.connect(g);g.connect(cp);cp.connect(AC.destination)}return AC}
 const SC=[0,2,4,7,9],note=i=>{i=Math.min(Math.max(i,0),12);return 293.66*Math.pow(2,(12*Math.floor(i/5)+SC[i%5])/12)};
@@ -368,10 +372,11 @@ function intro(){
    state='top';show('top');
    introT.push(setTimeout(()=>{field.innerHTML='';toks=[];gameEl.classList.remove('intro')},500))},900))}
  const ev=pr.map((_,i)=>()=>step(i));ev.push(finale);
- const w0=performance.now(),end=T[nP]+lat+1.8;let k=0;
- const loop=()=>{if(state!=='intro')return;const c=A.currentTime;
+ const w0=performance.now(),end=T[nP]+lat+1.8,a0=A.currentTime;let k=0;
+ // AudioContextが停止中(再オープン後など)でも時計が進むよう、実時間で代替する
+ const loop=()=>{if(state!=='intro')return;const el=(performance.now()-w0)/1000,run=A.state==='running'&&A.currentTime>a0+.02;if(!run&&A.state!=='running'){try{A.resume()}catch(e){}}const c=run?A.currentTime:(el>.35?a0+el:a0);
   while(k<ev.length&&c>=T[k]+lat)ev[k++]();
-  if(c>=end||performance.now()-w0>6000)return introEnd();
+  if(c>=end||performance.now()-w0>9000)return introEnd();
   requestAnimationFrame(loop)};
  requestAnimationFrame(loop)}
 let ch=0;
@@ -1865,8 +1870,10 @@ function bgmAsk(){
   $('bgmq').classList.add('on');
  }catch(e){}
 }
-$('bgmOn').onclick=()=>{bgmMuted=0;bgmWait=0;$('bgmq').classList.remove('on');bgmStart()};
-$('bgmOff').onclick=()=>{bgmMuted=1;bgmWait=0;$('bgmq').classList.remove('on');if(bgmA&&!bgmA.paused)bgmA.pause()};
+function setSnd(m){bgmMuted=m?1:0;SFXM=bgmMuted;try{if(SG)SG.gain.value=m?0:4.2}catch(e){}$('snd').classList.toggle('m',!!m);if(m){if(bgmA&&!bgmA.paused)bgmA.pause()}else{bgmWait=0;bgmStart()}}
+$('snd').onclick=()=>{setSnd(!bgmMuted)};
+$('bgmOn').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(0)};
+$('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)bgmHid=1;else if(bgmHid){bgmHid=0;bgmAsk()}});
 window.addEventListener('pageshow',e=>{if(e.persisted)bgmAsk()});
 // 初期表示時にベスト反映

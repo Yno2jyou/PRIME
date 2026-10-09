@@ -3,7 +3,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
 <meta http-equiv="Cache-Control" content="no-cache">
-<script>try{if(localStorage.getItem("prime_theme")==="dark"){document.documentElement.dataset.theme="dark";document.querySelector('meta[name="theme-color"]').content="#000000"}}catch(e){}</script>
+<script>try{if(localStorage.getItem("prime_theme")==="dark"){document.documentElement.dataset.theme="dark";document.querySelector('meta[name="theme-color"]').content="#000000"}}catch(e){}
+try{if(localStorage.getItem("prime_token"))document.documentElement.classList.add("has-token")}catch(e){}</script>
 <link rel="icon" href="favicon.ico" sizes="48x48">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
@@ -99,6 +100,19 @@ background:transparent;color:inherit;border:1px solid var(--line);border-radius:
 #thm:active{opacity:1}
 #thm svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 #thm .moon{display:none}:root[data-theme="dark"] #thm .sun{display:none}:root[data-theme="dark"] #thm .moon{display:block}
+/* ---- NO MISS / RANK UNDERLINE ---- */
+html.has-token #name{opacity:0;transition:none;pointer-events:none}
+.nl{margin-right:.5em}
+.pn.ul{padding-bottom:2px;background-repeat:no-repeat;background-position:0 100%;background-size:100% 2px}
+#who .pn.ul{padding-bottom:1px;background-size:100% 1px}
+.big .pn.ul{padding-bottom:4px;background-size:100% 3px}
+.ul-ink{background-image:linear-gradient(var(--fg),var(--fg))}
+.ul-gray{background-image:linear-gradient(#8b8b8b,#8b8b8b)}
+.ul-blue{background-image:linear-gradient(#3b82f6,#3b82f6)}
+.ul-purple{background-image:linear-gradient(#a855f7,#a855f7)}
+.ul-red{background-image:linear-gradient(#ef4444,#ef4444)}
+.ul-rainbow{background-image:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd400,#3ddc84,#3b82f6,#8b5cf6,#ff3b3b)}
+#nmSym{min-width:1.3em;letter-spacing:0}
 </style></head><body>
 <div class="screen on" id="name" style="gap:40px">
  <div style="font-size:22px;letter-spacing:.34em;font-weight:400;margin-left:.34em">PRIME</div>
@@ -135,7 +149,35 @@ background:transparent;color:inherit;border:1px solid var(--line);border-radius:
  <div class="lab" id="twRank" style="margin:0 0 6px;opacity:.7">Prologue</div>
  <div id="twProg" style="font-size:13px;letter-spacing:.14em;font-weight:300;margin-bottom:28px">BATTLE 1 / 47</div>
  <div class="link" id="twStart">ENTER</div>
- <div class="link" id="twBack" style="opacity:.5;font-size:10px;margin-top:20px">TOP</div>
+ <div class="link" id="twBack" style="opacity:.5;font-size:10px;margin-top:20px">BACK</div>
+</div></div>
+<div class="screen" id="twmode"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center;padding-top:calc(env(safe-area-inset-top,0px) + 48px)">
+ <div class="lab">PRIME TOWER</div>
+ <div style="display:flex;gap:40px;margin:30px 0 6px">
+  <div><div class="link" id="twYou" style="font-size:16px;margin:0">YOU</div><div class="lab" style="margin:0;text-align:center;opacity:.4">NO MISS</div></div>
+  <div><div class="link" id="twCpu" style="font-size:16px;margin:0">CPU</div><div class="lab" style="margin:0;text-align:center;opacity:.4">CPU 47</div></div>
+ </div>
+ <div class="link" id="twmBack" style="opacity:.5;font-size:10px;margin-top:30px">TOP</div>
+</div></div>
+<div class="screen" id="nmsel"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center;padding-top:calc(env(safe-area-inset-top,0px) + 48px)">
+ <div class="lab">NO MISS</div>
+ <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0 4px">
+  <div class="link" id="nmPrev" style="font-size:22px;margin:0;padding:12px 14px">‹</div>
+  <div class="big" id="nmSym">Z</div>
+  <div class="link" id="nmNext" style="font-size:22px;margin:0;padding:12px 14px">›</div>
+ </div>
+ <div class="lab" id="nmInfo" style="margin:10px 0 6px;opacity:.7">LEVEL 1</div>
+ <div id="nmReqTx" style="font-size:13px;letter-spacing:.14em;font-weight:300;margin-bottom:6px">97 / 47 SEC</div>
+ <div class="lab" id="nmStat" style="margin:0 0 28px;opacity:.45">—</div>
+ <div class="link" id="nmEnter">ENTER</div>
+ <div class="link" id="nmBack" style="opacity:.5;font-size:10px;margin-top:20px">BACK</div>
+</div></div>
+<div class="screen" id="nmres" style="justify-content:flex-start;overflow-y:auto"><div style="margin:auto;display:flex;flex-direction:column;align-items:center;padding:36px 24px;width:100%">
+ <div class="lab" id="nmrLab">NO MISS</div>
+ <div class="big" id="nmrResult" style="margin:8px 0 4px">CLEAR</div>
+ <div id="nmrStats" style="width:100%;max-width:280px;margin-top:28px"></div>
+ <div class="row" style="margin-top:36px"><div class="link" id="nmrNext">NEXT</div><div class="link" id="nmrStage" style="opacity:.5">STAGES</div></div>
+ <div class="link" id="nmrHome" style="opacity:.5;font-size:10px;margin-top:12px">TOP</div>
 </div></div>
 <div class="screen" id="twres" style="justify-content:flex-start;overflow-y:auto"><div style="margin:auto;display:flex;flex-direction:column;align-items:center;padding:36px 24px;width:100%">
  <div class="lab" id="twrLab">BATTLE 1</div>
@@ -385,8 +427,8 @@ function layout(){if(state==='intro')return;
   e.style.transform=`translate(${t.x-t.w/2}px,${t.y-t.s/2}px)`;x+=t.w});y+=r.h});
 }
 function spawn(tt){
- const n=last=gen(LV,rnd,last);cur=0;spl=0;ch=0;pen=penOf(n,LV);clean=1;
- $('cb').textContent=towerMode?twLabel(towerBattle)+'  '+towerBattle+'/47':'';
+ qLV=nmoMode?(nmoStage>=25?1+Math.floor(rnd()*5):Math.floor(nmoStage/5)+1):LV;const n=last=gen(qLV,rnd,last);cur=0;spl=0;ch=0;pen=penOf(n,qLV);clean=1;
+ $('cb').textContent=cbBase();
  const t=mk(n,0,field.clientWidth/2,field.clientHeight/2);layout();busy=false;
 }
 function showToast(h,v,m){
@@ -405,14 +447,16 @@ function bad(t){st.mi++;
  t.i.animate([{transform:'translateX(0)'},{transform:'translateX(-12px)'},{transform:'translateX(10px)'},{transform:'translateX(-5px)'},{transform:'translateX(0)'}],{duration:190,easing:'ease-out'});
  tone(170,.1,.07,0,'sine',110);vib(6);
 }
-function miss(t,dir,T){clean=0;ops.push([toks.indexOf(t),dir,T]);lastOp=T;score-=pen;st.pn+=pen;$('sc').textContent='SCORE '+score;bad(t);pop(t,pen,1)}
+function hudSc(){$('sc').textContent=nmoMode?'COUNT '+nmoCount+' / '+nmoReq:'SCORE '+score}
+function cbBase(){return nmoMode?'NO MISS  '+nmLetter(nmoStage):towerMode?twLabel(towerBattle)+'  '+towerBattle+'/47':''}
+function miss(t,dir,T){if(nmoMode){bad(t);nmoEnd(0,'MISS');return}clean=0;ops.push([toks.indexOf(t),dir,T]);lastOp=T;score-=pen;st.pn+=pen;hudSc();bad(t);pop(t,pen,1)}
 function act(t,dir){
  if(state!=='play'||busy||!t||t.gone)return;
  const T=Math.round(performance.now()-t0);if(T>=playDur||T-lastOp<MINGAP)return;
  const prime=isP(t.n);
  if(dir>0){
   if(prime)return miss(t,dir,T);
-  const idx=toks.indexOf(t);ops.push([idx,1,T]);lastOp=T;const [a,b]=split(t.n,sr(seed,t.n,done));spl++;st.sp++;st.mc=Math.max(st.mc,spl);{const m=mult(spl);$('cb').textContent='COMBO '+spl+'  ×'+m}t.gone=1;
+  const idx=toks.indexOf(t);ops.push([idx,1,T]);lastOp=T;const [a,b]=split(t.n,sr(seed,t.n,done));spl++;st.sp++;if(nmoMode)nmoCount++;st.mc=Math.max(st.mc,spl);if(!nmoMode){const m=mult(spl);$('cb').textContent='COMBO '+spl+'  ×'+m}t.gone=1;
   t.el.remove();toks.splice(idx,1);
   const A=mk(a,t.d+1,t.x,t.y),B=mk(b,t.d+1,t.x,t.y);toks.pop();toks.pop();toks.splice(idx,0,A,B);
   [A,B].forEach(z=>{z.el.style.transform=`translate(${t.x-t.w/2}px,${t.y-t.s/2}px)`;z.el.style.fontSize=t.s+'px';z.el.style.width=t.w+'px'});
@@ -423,16 +467,17 @@ function act(t,dir){
   t.gone=1;{const ix=toks.indexOf(t);ops.push([ix,-1,T]);lastOp=T;toks.splice(ix,1)}
   t.i.style.transition='transform .2s ease-in,opacity .2s';t.i.style.transform='translateX(-45vw)';t.i.style.opacity=0;
   setTimeout(()=>t.el.remove(),230);
-  st.pr++;cur+=pv(t.n,LV);if(toks.length)pop(t,pv(t.n,LV));
+  st.pr++;if(nmoMode&&!NM_SPLIT_ONLY)nmoCount++;cur+=pv(t.n,qLV);if(toks.length)pop(t,pv(t.n,qLV));
   swish(-1,.03);bell(pit(ch,2),.075);ch++;vib(10);layout();
   if(!toks.length){
    done++;busy=true;
-   const m=mult(spl),mm=clean?CLEAN_BONUS:1,gain=Math.round(cur*m*mm);st.bn=Math.max(st.bn,gain);score+=gain;$('sc').textContent='SCORE '+score;$('cb').textContent=towerMode?twLabel(towerBattle)+'  '+towerBattle+'/47':'';
-   showToast(clean?'PERFECT':t.d===0?'PRIME':'PRIME COMPLETE',gain,m*mm);
-   if(clean)nofan();else if(t.d>0)[1,3,5].forEach((k,i)=>bell(pit(ch,k),.06,.08+i*.07))
+   const m=mult(spl),mm=clean?CLEAN_BONUS:1,gain=Math.round(cur*m*mm);st.bn=Math.max(st.bn,gain);score+=gain;hudSc();$('cb').textContent=cbBase();
+   if(!nmoMode){showToast(clean?'PERFECT':t.d===0?'PRIME':'PRIME COMPLETE',gain,m*mm);
+   if(clean)nofan();else if(t.d>0)[1,3,5].forEach((k,i)=>bell(pit(ch,k),.06,.08+i*.07))}
    setTimeout(()=>{if(state==='play')spawn(T)},t.d===0?220:380);
   }
  }
+ if(nmoMode&&state==='play'){hudSc();if(nmoCount>=nmoReq)nmoEnd(1,'CLEAR')}
 }
 // ---------- input ----------
 let drag=null;
@@ -469,7 +514,10 @@ addEventListener('keydown',e=>{
  else if(state==='top'&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){LV=Math.min(5,Math.max(1,LV+(e.key==='ArrowRight'?1:-1)));[...$('lvT').children].forEach((c,j)=>c.className=j+1===LV?'on':'')}
  else if(state==='intro'&&!e.repeat&&performance.now()-navAt>400)introEnd();
  else if(state==='delconf'&&(e.key==='Escape'||e.key==='Enter')){e.preventDefault();if(e.key==='Escape'){$('delNo').click()}else{$('delYes').click()}}
- else if((state==='vs'||state==='room'||state==='tower')&&e.key==='Escape'){state='top';show('top')}
+ else if((state==='vs'||state==='room'||state==='twmode')&&e.key==='Escape'){state='top';show('top')}
+ else if(state==='tower'&&e.key==='Escape'){openTowerMode()}
+ else if(state==='nmsel'){if(e.key==='Escape')openTowerMode();else if(e.key==='ArrowLeft'){e.preventDefault();$('nmPrev').click()}else if(e.key==='ArrowRight'){e.preventDefault();$('nmNext').click()}else if(e.key==='Enter'&&!e.repeat){e.preventDefault();$('nmEnter').click()}}
+ else if(state==='nmres'){if(e.key==='Escape')openNmSel();else if(e.key==='Enter'&&!e.repeat){e.preventDefault();$('nmrNext').click()}}
  else if(state==='tower'&&e.key==='Enter'&&!e.repeat){e.preventDefault();towerBattle=1;startTowerBattle()}
  else if(state==='twres'&&e.key==='Enter'&&!e.repeat){e.preventDefault();$('twrNext').click()}
  else if(state==='twres'&&e.key==='Escape'){towerMode=0;state='top';show('top');refreshWho()}
@@ -477,7 +525,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('resize',layout);
 // ---------- flow ----------
-function show(id,q){['name','top','game','end','board','rule','vs','room','tower','twres','delconf'].forEach(s=>{const e=$(s),on=s===id;
+function show(id,q){['name','top','game','end','board','rule','vs','room','tower','twres','delconf','twmode','nmsel','nmres'].forEach(s=>{const e=$(s),on=s===id;
  if(q&&!on&&e.classList.contains('on')){e.style.transition='none';e.classList.remove('on');void e.offsetWidth;e.style.transition=''}else e.classList.toggle('on',on)});showHook(id)}
 const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 let playDur=DUR;
@@ -492,7 +540,7 @@ async function begin(rm){
  if(state==='starting'||state==='count')return;const my=++runId;introStop();
  ac();AC.resume&&AC.resume();
  roomCtx=rm||null;if(rm){if(!LVkeep)LVkeep=LV;LV=rm.level}else if(LVkeep){LV=LVkeep;LVkeep=0}
- playDur=DUR;towerMode=0;
+ playDur=DUR;towerMode=0;nmoMode=0;
  state='starting';field.innerHTML='';toks=[];score=0;done=0;cur=0;busy=false;last=0;ops=[];lastOp=-1e9;sid=null;rankP=null;st={sp:0,pr:0,mi:0,mc:0,bn:0,pn:0};
  $('sc').textContent='SCORE 0';$('tm').textContent=fmt(playDur);toast.classList.remove('s');show('game');
  if(rm){sid=rm.id;seed=rm.seed>>>0}else try{const r=await call('start',{level:LV});sid=r.id;seed=r.seed>>>0}catch(e){seed=(Math.random()*4294967296)>>>0}
@@ -510,6 +558,7 @@ function tick(){
  if(left<=0)return finish();requestAnimationFrame(tick);
 }
 function finish(){
+ if(nmoMode){$('tm').textContent='00:00';nmoEnd(0,'TIME UP');return}
  if(score<0)score=0;
  state='over';$('tm').textContent='00:00';drag=null;$('cb').textContent='';
  toks.forEach(t=>t.el.style.opacity=0);toast.classList.remove('s');
@@ -555,7 +604,7 @@ function pause(){if(state==='starting'||state==='count'||state==='play'){pState=
 function resume(){if(state!=='pause')return;$('conf').classList.remove('on');
  if(pState==='play'){t0+=performance.now()-pAt;state='play';requestAnimationFrame(tick);if(cpuVis.on)cpuVis.raf=requestAnimationFrame(tickCpuVis)}else state=pState}
 function toTop(){runId++;const c=$('conf');c.style.transition='none';c.classList.remove('on');void c.offsetWidth;c.style.transition='';
- field.innerHTML='';toks=[];drag=null;cd.textContent='';cd.style.cssText='';stopCpuVis();towerMode=0;state='top';show('top',true)}
+ field.innerHTML='';toks=[];drag=null;cd.textContent='';cd.style.cssText='';stopCpuVis();towerMode=0;nmoMode=0;state='top';show('top',true)}
 $('quit').onclick=pause;$('cn').onclick=resume;
 $('cy').onclick=toTop;
 // ---------- scores ----------
@@ -568,9 +617,9 @@ async function remoteTop(l){
  const r=await fetch(API+'/api/top?level='+l);if(!r.ok){const e=new Error('http');e.code=r.status;throw e}
  const m=mineSet();
  return (await r.json()).map(x=>{
-  const n=String(x.name).slice(0,16);
+  const n=String(x.name).slice(0,24);
   // 提出ID一致、またはログイン中IDと同名 → 自分の記録（ログイン導入前後の連続性）
-  return{me:m.has(x.id)||isMyPlayerName(n),n:n.slice(0,12),s:x.score,t:x.ts};
+  return{me:m.has(x.id)||isMyPlayerName(n),n:n.slice(0,24),s:x.score,t:x.ts};
  });
 }
 let PN=(()=>{try{return localStorage.getItem('prime_name')||''}catch(e){return''}})();
@@ -585,11 +634,20 @@ function submit(){
 const fd=t=>{const d=new Date(t),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())};
 function nameThemeClass(){const t=titleThemeOf(towerBest);return t?'name-'+t:''}
 // ランク接頭辞を除いた素のプレイヤー名
-function basePlayerName(name){
- return String(name||'').replace(/^[ZαβγδεζηθΩ∞]\d*\s+/,'').trim()||String(name||'').trim();
+const TWP='(?:Z[1-5]|[αβγδεζηθ][1-5]|Ω|∞)';
+const RE_NM1=new RegExp('^([A-Z])·\\s*'),RE_NM2=new RegExp('^([A-Z])(?='+TWP+'\\s)'),RE_TW=new RegExp('^('+TWP+')\\s+');
+// 保存名の接頭辞: [NO MISSランク文字][CPU47ランク] 例 "Vβ3 YY" / "V· YY"(CPU47未到達) / "β3 YY"(NO MISS未到達)
+// nm = クリア済みステージ数(Z=1 … A=26)
+function parsePfx(name){
+ let s=String(name||'').trim(),nmk=0,tw='',m;
+ if(m=s.match(RE_NM1)){nmk=91-m[1].charCodeAt(0);s=s.slice(m[0].length)}
+ else if(m=s.match(RE_NM2)){nmk=91-m[1].charCodeAt(0);s=s.slice(1)}
+ if(m=s.match(RE_TW)){tw=m[1];s=s.slice(m[0].length)}
+ return{nm:nmk,tw,base:s.trim()||String(name||'').trim()};
 }
+function basePlayerName(name){return parsePfx(name).base}
 function rankValueFromName(name){
- const m=String(name||'').trim().match(/^([ZαβγδεζηθΩ∞])(\d*)/);
+ const m=parsePfx(name).tw.match(/^([ZαβγδεζηθΩ∞])(\d*)/);
  if(!m)return 0;
  const sym=m[1],n=m[2]?+m[2]:1;
  if(sym==='∞')return 47;
@@ -597,10 +655,7 @@ function rankValueFromName(name){
  const base={Z:0,α:5,β:10,γ:15,δ:20,ε:25,ζ:30,η:35,θ:40};
  return (base[sym]||0)+Math.min(Math.max(n,1),5);
 }
-function rankLabelFromName(name){
- const m=String(name||'').trim().match(/^([ZαβγδεζηθΩ∞]\d*)/);
- return m?m[1]:'';
-}
+function rankLabelFromName(name){return parsePfx(name).tw}
 function themeFromRankLabel(label){
  if(!label)return '';
  const sym=label.charAt(0);
@@ -641,11 +696,20 @@ function currentRankLabelFor(name,list,isMe){
  });
  return label||rankLabelFromName(name);
 }
-function displayNameForRank(name,list,isMe){
- const mine=!!(isMe||isMyPlayerName(name));
- const base=mine?(PN||basePlayerName(name)):basePlayerName(name);
- const label=currentRankLabelFor(name,list,mine);
- return label?(label+' '+base):base;
+// 表示用ランク {nm:NO MISSクリア数, tw:CPU47ラベル}。自分は常に現在の到達度、他人は同名の記録のうち最高を採用
+function ranksFor(name,list,isMe){
+ if(isMe||isMyPlayerName(name))return{nm:nmBest,tw:towerBest?twLabel(towerBest):''};
+ const base=basePlayerName(name).toLowerCase(),p0=parsePfx(name);
+ let bt=0,tw='',bn=0;
+ (list||[]).forEach(x=>{const p=parsePfx(x.n);if(p.base.toLowerCase()!==base)return;const v=rankValueFromName(x.n);if(v>bt){bt=v;tw=p.tw}if(p.nm>bn)bn=p.nm});
+ return{nm:Math.max(bn,p0.nm),tw:tw||p0.tw};
+}
+// 名前要素: 左端にランク文字(NO MISS文字+ギリシャ文字)、プレイヤー名にはNO MISSランクの色付き下線
+function setNameEl(e,rk,base){
+ e.textContent='';
+ const lb=(rk.nm>0?nmKLetter(rk.nm):'')+(rk.tw||'');
+ if(lb){const s=document.createElement('span');s.className='nl';s.textContent=lb;e.appendChild(s)}
+ const p=document.createElement('span'),u=nmUl(rk.nm);p.className='pn'+(u?' ul ul-'+u:'');p.textContent=base;e.appendChild(p);
 }
 function paintNameEl(e,force,nameText,list){
  if(!e)return;
@@ -666,14 +730,15 @@ function rows(el,list){
  list.forEach((x,i)=>{
   const isMe=!!(x.me||localMine||isMyPlayerName(x.n));
   const r=document.createElement('div');r.className='r'+(i>=10&&el.id==='world'?' x':'');
-  const shown=displayNameForRank(x.n||'',list,isMe);
-  [['em',i+1],['u',shown],['b',x.s],['span',fd(x.t)]].forEach(([k,v])=>{
-   const e=document.createElement(k);e.textContent=v;
-   if(isMe&&k==='b')e.style.fontWeight=600;
+  const rk=ranksFor(x.n||'',list,isMe),base=isMe?(PN||basePlayerName(x.n)):basePlayerName(x.n);
+  [['em',i+1],['u',''],['b',x.s],['span',fd(x.t)]].forEach(([k,v])=>{
+   const e=document.createElement(k);
    if(k==='u'){
+    setNameEl(e,rk,base);
     if(isMe)e.dataset.me='1';
-    paintNameEl(e,isMe,shown,list);
-   }
+    paintNameEl(e,isMe,x.n||'',list);
+   }else e.textContent=v;
+   if(isMe&&k==='b')e.style.fontWeight=600;
    r.appendChild(e)});
   el.appendChild(r);
  });
@@ -785,12 +850,12 @@ async function serverLoginWithVariants(id,pass,disp){
  const e=new Error('auth');e.code=401;throw e;
 }
 function emptyProgress(name){
- return{name:name||'ANON',towerBest:0,theme:'light',mine:{1:[],2:[],3:[],4:[],5:[]},ts:Date.now()};
+ return{name:name||'ANON',towerBest:0,nmBest:0,theme:'light',mine:{1:[],2:[],3:[],4:[],5:[]},ts:Date.now()};
 }
 function collectProgress(){
  const mine={};
  for(let l=1;l<=5;l++)mine[l]=loadMine(l);
- return{name:PN,towerBest:towerBest|0,theme:(()=>{try{return localStorage.getItem('prime_theme')||'light'}catch(e){return'light'}})(),mine,ts:Date.now()};
+ return{name:PN,towerBest:towerBest|0,nmBest:nmBest|0,theme:(()=>{try{return localStorage.getItem('prime_theme')||'light'}catch(e){return'light'}})(),mine,ts:Date.now()};
 }
 // ブラウザに残っている進捗とアカウント進捗を統合（高い方・スコアは合算マージ）
 function mergeProgress(account,browser){
@@ -806,6 +871,7 @@ function mergeProgress(account,browser){
  return{
   name:preferName(a.name,b.name)||'ANON',
   towerBest:Math.max(+a.towerBest||0,+b.towerBest||0),
+  nmBest:Math.min(26,Math.max(+a.nmBest||0,+b.nmBest||0)),
   theme:a.theme||b.theme||'light',
   mine,
   ts:Date.now()
@@ -818,6 +884,8 @@ function loadAccountProgress(d){
  try{localStorage.setItem('prime_name',PN)}catch(e){}
  towerBest=Math.max(0,+d.towerBest||0);
  try{localStorage.setItem('prime_tower_best',String(towerBest))}catch(e){}
+ nmBest=Math.min(26,Math.max(0,+d.nmBest||0));
+ try{localStorage.setItem('prime_nm_best',String(nmBest))}catch(e){}
  const th=d.theme==='dark'?'dark':'light';
  try{localStorage.setItem('prime_theme',th)}catch(e){}
  const root=document.documentElement,tc=document.querySelector('meta[name="theme-color"]');
@@ -947,7 +1015,7 @@ async function doResetPass(){
 function progressFingerprint(d){
  if(!d||typeof d!=='object')return '';
  const mine=d.mine||{};
- const parts=[d.towerBest|0,d.theme||'',d.name||''];
+ const parts=[d.towerBest|0,d.nmBest|0,d.theme||'',d.name||''];
  for(let l=1;l<=5;l++){
   const list=Array.isArray(mine[l])?mine[l]:[];
   parts.push(list.map(x=>(x&&x.s)+':'+(x&&x.t)).join(','));
@@ -1009,7 +1077,7 @@ function enterApp(opts){
  cd.textContent='';cd.style.cssText='';
  stopCpuVis&&stopCpuVis();
  gameEl.classList.remove('intro');
- $('who').textContent=displayName();paintNameEl($('who'),1);applyTitleTheme();
+ refreshWho();applyTitleTheme();
  refreshLogoutBtn();
  if(opts&&opts.skipIntro){
   state='top';show('top');
@@ -1174,10 +1242,11 @@ async function doDeleteAccount(){
   localStorage.removeItem('prime_uid');
   localStorage.removeItem('prime_name');
   localStorage.removeItem('prime_tower_best');
+  localStorage.removeItem('prime_nm_best');
   localStorage.removeItem('prime_mine');
   for(let l=1;l<=5;l++)localStorage.removeItem(LK(l));
  }catch(e){}
- PN='';towerBest=0;
+ PN='';towerBest=0;nmBest=0;
  nm.value='';pw.value='';
  authMsg('DELETED');
  refreshLogoutBtn();
@@ -1202,25 +1271,27 @@ $('delNo').onclick=()=>{state='name';show('name');authMsg('');refreshLogoutBtn()
 nm.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();pw.focus()}});
 pw.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();doAuth('login')}});
 $('who').onclick=()=>{introStop();state='name';show('name');authMsg('');refreshLogoutBtn();nm.focus()};
-addEventListener('load',async()=>{
+document.addEventListener('DOMContentLoaded',async()=>{
  // 重複アカウントを起動時に整理（進捗が多い方＋パスワード両対応）
  try{localUsers()}catch(e){}
  nm.value=PN||(()=>{try{return localStorage.getItem('prime_uid')||''}catch(e){return''}})();
+ const HT=document.documentElement;
  if(authToken){
-  authMsg('…');
+  // ログイン済み: ログイン画面は一度も出さず、保存済みの進捗で即TOPを表示。サーバー同期は表示後に背景で行う
   try{
-   await pullAccountProgress();
-   // ローカルに名前が無ければ uid から復元
+   if(String(authToken).startsWith('local_'))await pullAccountProgress();
    if(!PN){try{PN=localStorage.getItem('prime_uid')||''}catch(e){}}
-   authMsg('');
+   const tp=$('top');tp.style.transition='none';
    enterApp({skipIntro:true});
+   void tp.offsetWidth;tp.style.transition='';
+   HT.classList.remove('has-token');
+   if(!String(authToken).startsWith('local_'))pullAccountProgress().then(()=>{if(!PN){try{PN=localStorage.getItem('prime_uid')||''}catch(e){}}refreshWho();applyTitleTheme()}).catch(()=>{});
    return;
   }catch(e){
-   // トークン無効などで失敗したらログイン画面に留める
    try{localStorage.removeItem('prime_token');authToken=''}catch(e2){}
-   authMsg('');
   }
  }
+ HT.classList.remove('has-token');
  state='name';show('name');
  refreshLogoutBtn();
  nm.focus();
@@ -1262,7 +1333,7 @@ async function loadRoom(){
   const at=d.startAt?d.startAt-(d.now-(t1+t2)/2):0; // 開始時刻を自分の端末の時計に換算
   r0.level=d.level;r0.at=at;$('rmLv').textContent='LEVEL '+d.level;
   $('rmRes').textContent='RESULTS  '+d.list.length+' / '+d.joined;
-  if(d.list.length)rows($('rmList'),d.list.map(x=>({me:x.me,n:String(x.n).slice(0,12),s:x.s,t:x.t})));else $('rmList').innerHTML='';
+  if(d.list.length)rows($('rmList'),d.list.map(x=>({me:x.me,n:String(x.n).slice(0,24),s:x.s,t:x.t})));else $('rmList').innerHTML='';
   if(!d.inRound&&at&&Date.now()<at+1500&&!rmBusy){joinRoom(at);return} // 新ラウンド開始直後 → 自動で参加してカウントダウンへ
   $('rmHere').style.display=d.host&&d.here!=null?'':'none';$('rmHere').textContent='IN ROOM  '+d.here;
   $('rmStart').style.display=d.host?'':'none';
@@ -1277,10 +1348,10 @@ async function loadRoom(){
 }
 // ===== 自動アップデート: サーバーのVERが自分より新しければ、安全な画面で自動リロード =====
 // worker.js の VER と同じ値にしておく(デプロイのたびに両方を上げる)
-const VER='2026-10-06.2';
+const VER='2026-10-09.1';
 let newVer='';
 function checkVer(v){if(typeof v==='string'&&v>VER)newVer=v}
-function safeToReload(){return['top','room','end','board','vs','rule','name','intro','tower','twres','delconf'].includes(state)}
+function safeToReload(){return['top','room','end','board','vs','rule','name','intro','tower','twres','delconf','twmode','nmsel','nmres'].includes(state)}
 function applyUpdate(){
  if(!newVer||!safeToReload())return;
  let tried='';try{tried=sessionStorage.getItem('prime_upd')||''}catch(e){}
@@ -1352,8 +1423,9 @@ $('rmShare').onclick=async()=>{
 $('rmBack').onclick=()=>{state='top';show('top')};
 $('start').onclick=()=>begin();$('retry').onclick=()=>roomCtx?backToRoom():begin();$('home').onclick=()=>{state='top';show('top')};
 // ========== PRIME TOWER 〜回廊〜 ==========
-let towerMode=0,towerBattle=1,towerBest=0,cpuScore=0;
+let towerMode=0,towerBattle=1,towerBest=0,cpuScore=0,nmBest=0,nmoMode=0,nmoStage=0,nmoCount=0,nmoReq=0,qLV=1,nmoSel=0,nmoFirst=0;
 try{towerBest=+localStorage.getItem('prime_tower_best')||0}catch(e){}
+try{nmBest=Math.min(26,Math.max(0,+localStorage.getItem('prime_nm_best')||0))}catch(e){}
 const TW_RANKS=[
  {lo:1,hi:5,sym:'Z',name:'Prologue',en:'Prologue'},
  {lo:6,hi:10,sym:'α',name:'Alpha',en:'Alpha'},
@@ -1419,10 +1491,11 @@ function cpuPlay(seed,level,skill,dur){
  return Math.max(0,Math.round(base*f));
 }
 function displayName(){
- if(!towerBest)return PN;
- return twLabel(towerBest)+' '+PN;
+ const tw=towerBest?twLabel(towerBest):'';
+ if(nmBest>0)return nmKLetter(nmBest)+(tw||'·')+' '+PN;
+ return tw?tw+' '+PN:PN;
 }
-function refreshWho(){try{$('who').textContent=displayName();paintNameEl($('who'),1)}catch(e){}}
+function refreshWho(){try{const e=$('who');setNameEl(e,{nm:nmBest,tw:towerBest?twLabel(towerBest):''},PN);paintNameEl(e,1)}catch(e){}}
 function titleThemeOf(b){
  if(b>=47)return 'rainbow';
  if(b>=41)return 'gold';
@@ -1531,7 +1604,7 @@ async function beginTower(){
  if(state==='starting'||state==='count')return;const my=++runId;introStop();
  ac();AC.resume&&AC.resume();
  roomCtx=null;LVkeep=0;stopCpuVis();
- playDur=towerDur(towerBattle);
+ playDur=towerDur(towerBattle);nmoMode=0;
  state='starting';field.innerHTML='';toks=[];score=0;done=0;cur=0;busy=false;last=0;ops=[];lastOp=-1e9;sid=null;rankP=null;st={sp:0,pr:0,mi:0,mc:0,bn:0,pn:0};
  $('sc').textContent='SCORE 0';$('tm').textContent=fmt(playDur);toast.classList.remove('s');show('game');
  // ローカルseed（対戦用、サーバー不要）
@@ -1586,8 +1659,97 @@ function towerFinish(playerScore){
  }
  state='twres';show('twres');
 }
-$('twbtn').onclick=openTower;
-$('twBack').onclick=()=>{state='top';show('top')};
+// ========== NO MISS (PRIME TOWER / YOU) ==========
+// ステージ Z(最初)〜A(最終)。47秒以内にミス0で規定回数に到達するとクリア。ミスした瞬間に終了(同じステージをやり直し)
+const NM_DUR=47000;
+const NM_REQ=[97,144,191,238,285];   // 各レベル帯(5ランク)の規定回数。Z/U/P/K/F=97 … V/Q/L/G/B=285
+const NM_REQ_A=332;                  // A(最終): レベル1〜5からランダム出題
+const NM_SPLIT_ONLY=false;           // true: 分解(右スワイプ)のみカウント / false: 素数の回収(左スワイプ)も含めた正解操作の合計
+const nmReq=i=>i>=25?NM_REQ_A:NM_REQ[i%5];
+const nmLvOf=i=>i>=25?0:Math.floor(i/5)+1;      // 0=ランダム
+const nmLetter=i=>String.fromCharCode(90-i);     // ステージ番号(0=Z) → 文字
+const nmKLetter=k=>k>0?String.fromCharCode(91-k):''; // クリア数(1=Z) → 最高クリア文字
+const NM_ULS=['ink','gray','blue','purple','red'];
+// 下線色: Z〜V 黒 / U〜Q 灰 / P〜L 青 / K〜G 紫 / F〜B 赤 / A 虹
+const nmUl=k=>k<=0?'':k>=26?'rainbow':NM_ULS[Math.floor((k-1)/5)];
+function saveNmBest(k){
+ if(k>nmBest){nmBest=Math.min(26,k);try{localStorage.setItem('prime_nm_best',String(nmBest))}catch(e){}refreshWho();applyTitleTheme();pushSync()}
+}
+function openTowerMode(){towerMode=0;nmoMode=0;state='twmode';show('twmode')}
+function openNmSel(){nmoSel=Math.min(nmBest,25);renderNmSel();state='nmsel';show('nmsel')}
+function renderNmSel(){
+ const i=nmoSel,locked=i>nmBest,lv=nmLvOf(i);
+ const sym=$('nmSym');sym.textContent='';
+ const sp=document.createElement('span');sp.className='pn ul ul-'+nmUl(i+1);sp.textContent=nmLetter(i);sym.appendChild(sp);
+ sym.style.opacity=locked?.25:1;
+ $('nmInfo').textContent=lv?'LEVEL '+lv:'LEVEL 1–5  RANDOM';
+ $('nmReqTx').textContent=nmReq(i)+(NM_SPLIT_ONLY?' SPLITS':' STEPS')+'  /  '+(NM_DUR/1000)+' SEC';
+ $('nmStat').textContent=locked?'LOCKED':i<nmBest?'CLEARED':'NEW';
+ $('nmPrev').style.opacity=i>0?1:.2;$('nmNext').style.opacity=i<25?1:.2;
+ $('nmEnter').style.opacity=locked?.25:1;
+}
+$('nmPrev').onclick=()=>{if(nmoSel>0){nmoSel--;renderNmSel()}};
+$('nmNext').onclick=()=>{if(nmoSel<25){nmoSel++;renderNmSel()}};
+$('nmEnter').onclick=()=>{if(nmoSel>nmBest)return;nmoStage=nmoSel;beginNoMiss()};
+async function beginNoMiss(){
+ if(state==='starting'||state==='count')return;const my=++runId;introStop();
+ ac();AC.resume&&AC.resume();
+ roomCtx=null;LVkeep=0;stopCpuVis();towerMode=0;nmoMode=1;
+ playDur=NM_DUR;nmoCount=0;nmoReq=nmReq(nmoStage);
+ state='starting';field.innerHTML='';toks=[];score=0;done=0;cur=0;busy=false;last=0;ops=[];lastOp=-1e9;sid=null;rankP=null;st={sp:0,pr:0,mi:0,mc:0,bn:0,pn:0};
+ hudSc();$('cb').textContent='';$('tm').textContent=fmt(playDur);toast.classList.remove('s');show('game');
+ seed=((Math.random()*4294967296)^(nmoStage*0x9E3779B1)^(Date.now()&0xFFFF))>>>0;rnd=mulberry32(seed);
+ if(state==='pause')pState='count';else state='count';
+ cd.style.cssText='font-size:clamp(56px,16vw,120px);padding-left:0';
+ cd.textContent=nmLetter(nmoStage);
+ if(!await hold(900,my))return;
+ cd.textContent='';cd.style.cssText='';
+ for(const c of ['3','2','1']){cd.textContent=c;cd.animate([{opacity:0,transform:'scale(1.15)'},{opacity:1,transform:'none'}],{duration:200,easing:'ease-out'});bell(note(4),.09);if(!await hold(700,my))return}
+ cd.style.cssText='font-size:clamp(34px,10vw,64px);letter-spacing:.22em;padding-left:.22em';cd.textContent='START';
+ cd.animate([{opacity:0,transform:'scale(1.15)'},{opacity:1,transform:'none'}],{duration:200,easing:'ease-out'});bell(note(4)*2,.11);
+ if(!await hold(700,my))return;
+ cd.textContent='';cd.style.cssText='';t0=performance.now();state='play';
+ spawn(0);requestAnimationFrame(tick);
+}
+// 終了: win=クリア / msg='CLEAR'|'MISS'|'TIME UP'
+function nmoEnd(win,msg){
+ if(state!=='play')return;
+ const el=Math.min(playDur,Math.round(performance.now()-t0));
+ state='over';drag=null;busy=true;
+ toast.classList.remove('s');$('cb').textContent='';
+ nmoFirst=0;if(win&&nmoStage===nmBest){nmoFirst=1;saveNmBest(nmoStage+1)}
+ toks.forEach(x=>{x.el.style.opacity=0});
+ cd.style.cssText='font-size:clamp(34px,10vw,64px);letter-spacing:.22em;padding-left:.22em';cd.textContent=msg;
+ cd.animate([{opacity:0,transform:'scale(1.08)'},{opacity:1,transform:'none'}],{duration:220,easing:'ease-out'});
+ if(win){[0,4,7,9].forEach((k,i)=>bell(note(k+3),.07,i*.09))}
+ else if(msg==='TIME UP'){[9,7,4].forEach((k,i)=>bell(note(k),.07,i*.12));tone(note(0)/2,.7,.09,.28);vib([30,40,30])}
+ else{[4,2,0].forEach((k,i)=>bell(note(k),.06,.08+i*.1))}
+ setTimeout(()=>{if(state!=='over'||!nmoMode)return;cd.textContent='';cd.style.cssText='';nmoResult(win,el,msg)},win?1000:1300);
+}
+function nmoResult(win,el,msg){
+ $('nmrLab').textContent='NO MISS  '+nmLetter(nmoStage)+(nmoFirst?'  ·  NEW RANK':'');
+ const r=$('nmrResult');r.textContent=win?(nmoStage===25?'ALL CLEAR':'CLEAR'):msg;r.style.color=win?'':'var(--neg)';
+ const box=$('nmrStats');box.textContent='';
+ [['COUNT',nmoCount+' / '+nmoReq],['TIME',(el/1000).toFixed(2)+' s'],['MISS',st.mi]].forEach(([k,v])=>{
+  const row=document.createElement('div');row.className='r';
+  const a=document.createElement('em');a.style.width='auto';a.style.flex='1';a.textContent=k;
+  const b=document.createElement('b');b.style.fontSize='18px';b.textContent=v;row.append(a,b);box.appendChild(row);
+ });
+ const nx=$('nmrNext');
+ if(win&&nmoStage<25){nx.textContent='NEXT';nx.onclick=()=>{nmoStage++;beginNoMiss()}}
+ else if(win){nx.textContent='TOP';nx.onclick=()=>{nmoMode=0;state='top';show('top');refreshWho()}}
+ else{nx.textContent='RETRY';nx.onclick=()=>beginNoMiss()}
+ state='nmres';show('nmres');
+ if(win)scorefan(SCTHEME,1);
+}
+$('nmrStage').onclick=openNmSel;
+$('nmrHome').onclick=()=>{nmoMode=0;state='top';show('top');refreshWho()};
+$('nmBack').onclick=openTowerMode;
+$('twYou').onclick=openNmSel;
+$('twCpu').onclick=openTower;
+$('twmBack').onclick=()=>{state='top';show('top')};
+$('twbtn').onclick=openTowerMode;
+$('twBack').onclick=openTowerMode;
 $('twStart').onclick=()=>{towerBattle=1;startTowerBattle()};
 $('twrHome').onclick=()=>{towerMode=0;state='top';show('top');refreshWho()};
 // 初期表示時にベスト反映

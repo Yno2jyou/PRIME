@@ -1832,7 +1832,7 @@ $('twrHome').onclick=()=>{towerMode=0;state='top';show('top');refreshWho()};
 // ========== BGM ==========
 // 全画面(ログイン・TOP・カウントダウン・プレイ中・結果)で1倍速ループ。画面遷移では止めず、シームレスに流し続ける
 // ログイン画面の入力で再生許可を取り、ログイン済みでサイトを開き直した時は 音声ON/OFF の選択を表示
-let bgmA=null,bgmC=null,bgmOn=0,bgmT=0,bgmMuted=0,bgmWait=0,bgmHid=0;
+let bgmG=null,bgmA=null,bgmC=null,bgmOn=0,bgmT=0,bgmMuted=0,bgmWait=0,bgmHid=0;
 var bgmIntroAsk=0; // ログイン直後のアニメーション後に音声選択を出す(showHookから参照するため var)
 const BGM_GAIN=2.4;
 function bgmStart(inGame){
@@ -1846,7 +1846,7 @@ function bgmStart(inGame){
    try{
     const C=window.AudioContext||window.webkitAudioContext;bgmC=new C();
     const src=bgmC.createMediaElementSource(bgmA),g=bgmC.createGain(),cp=bgmC.createDynamicsCompressor();
-    g.gain.value=BGM_GAIN;cp.threshold.value=-10;cp.knee.value=12;cp.ratio.value=6;cp.attack.value=.003;cp.release.value=.25;
+    bgmG=g;g.gain.value=BGM_GAIN;cp.threshold.value=-10;cp.knee.value=12;cp.ratio.value=6;cp.attack.value=.003;cp.release.value=.25;
     src.connect(g);g.connect(cp);cp.connect(bgmC.destination);
    }catch(e){bgmC=null;bgmA.volume=1}
   }
@@ -1859,6 +1859,7 @@ function bgmStart(inGame){
 function bgmTick(){
  if(!bgmOn||!bgmA)return;
  try{
+  if(bgmG&&bgmC){const tg=BGM_GAIN*((state==='play'||state==='pause')?.6:1);if(Math.abs(bgmG.gain.value-tg)>.01)bgmG.gain.setTargetAtTime(tg,bgmC.currentTime,.4)}
   // ミュート・画面非表示以外は止めない(カウントダウン・プレイ中・中断メニュー中もシームレスに流し続ける)
   if(bgmMuted||document.hidden){if(!bgmA.paused)bgmA.pause();return}
   if(bgmWait)return; // 音声選択の表示中は、停止中なら再生を始めない(流れている曲は止めない)

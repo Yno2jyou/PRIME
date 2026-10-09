@@ -4,7 +4,7 @@
 <meta name="theme-color" content="#ffffff">
 <meta http-equiv="Cache-Control" content="no-cache">
 <script>try{if(localStorage.getItem("prime_theme")==="dark"){document.documentElement.dataset.theme="dark";document.querySelector('meta[name="theme-color"]').content="#000000"}}catch(e){}
-try{if(localStorage.getItem("prime_token"))document.documentElement.classList.add("has-token")}catch(e){}</script>
+try{if(localStorage.getItem("prime_token")&&sessionStorage.getItem("prime_sess"))document.documentElement.classList.add("has-token")}catch(e){}</script>
 <link rel="icon" href="favicon.ico" sizes="48x48">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
@@ -807,7 +807,7 @@ async function loadBoard(){const l=bLV;
 }
 const nm=$('nm'),pw=$('pw');
 let navAt=0,authToken='',authBusy=0;
-try{authToken=localStorage.getItem('prime_token')||''}catch(e){}
+try{authToken=(sessionStorage.getItem('prime_sess')&&localStorage.getItem('prime_token'))||''}catch(e){}
 const authMsg=t=>{const e=$('authMsg');if(e)e.textContent=t||''};
 // SHA-256（crypto.subtle が使えない環境向けに純JSフォールバック）
 async function sha256(s){
@@ -1054,7 +1054,7 @@ async function doResetPass(){
   rec.hash=canonHash;rec.hashes=[canonHash];rec.data=data;
   users[key]=rec;saveLocalUsers(users);
   authToken=rec.token||('local_'+key);
-  try{localStorage.setItem('prime_token',authToken);localStorage.setItem('prime_uid',key)}catch(e){}
+  try{localStorage.setItem('prime_token',authToken);try{sessionStorage.setItem('prime_sess','1')}catch(e){}localStorage.setItem('prime_uid',key)}catch(e){}
   loadAccountProgress(data);
   await saveAccountProgress();
   authMsg('PASS UPDATED');pw.value='';authBusy=0;refreshLogoutBtn();
@@ -1219,7 +1219,7 @@ async function doAuth(mode){
    if(up)r=up;
   }
   authToken=r.token||'';
-  try{localStorage.setItem('prime_token',authToken);localStorage.setItem('prime_uid',id)}catch(e){}
+  try{localStorage.setItem('prime_token',authToken);try{sessionStorage.setItem('prime_sess','1')}catch(e){}localStorage.setItem('prime_uid',id)}catch(e){}
   loadAccountProgress(r.data||mergeProgress(emptyProgress(id),browserProgress));
   if(disp){PN=preferName(disp,PN);try{localStorage.setItem('prime_name',PN)}catch(e){}}
   await saveAccountProgress();
@@ -1236,7 +1236,7 @@ async function doAuth(mode){
    try{
     r=await doAuthLocal(mode,id,pass,collectProgress(),disp);
     authToken=r.token||'';
-    try{localStorage.setItem('prime_token',authToken);localStorage.setItem('prime_uid',id)}catch(e3){}
+    try{localStorage.setItem('prime_token',authToken);try{sessionStorage.setItem('prime_sess','1')}catch(e){}localStorage.setItem('prime_uid',id)}catch(e3){}
     loadAccountProgress(r.data||emptyProgress(id));
     if(disp){PN=preferName(disp,PN);try{localStorage.setItem('prime_name',PN)}catch(e3){}}
     authMsg('');pw.value='';authBusy=0;refreshLogoutBtn();enterApp();
@@ -1260,7 +1260,7 @@ async function doLogout(){
  try{await saveAccountProgress()}catch(e){}
  authToken='';
  try{
-  localStorage.removeItem('prime_token');
+  localStorage.removeItem('prime_token');try{sessionStorage.removeItem('prime_sess')}catch(e){}
   // uid は残してもよいがセッションは切る
  }catch(e){}
  pw.value='';

@@ -538,7 +538,7 @@ function towerDur(b){
  return 47000;
 }
 async function begin(rm){
- if(state==='starting'||state==='count')return;const my=++runId;introStop();
+ if(state==='starting'||state==='count')return;bgmStart(1);const my=++runId;introStop();
  ac();AC.resume&&AC.resume();
  roomCtx=rm||null;if(rm){if(!LVkeep)LVkeep=LV;LV=rm.level}else if(LVkeep){LV=LVkeep;LVkeep=0}
  playDur=DUR;towerMode=0;nmoMode=0;
@@ -1653,7 +1653,7 @@ function startCpuVis(seed,level,finalScore,skill){
  cpuVis.raf=requestAnimationFrame(tickCpuVis);
 }
 async function beginTower(){
- if(state==='starting'||state==='count')return;const my=++runId;introStop();
+ if(state==='starting'||state==='count')return;bgmStart(1);const my=++runId;introStop();
  ac();AC.resume&&AC.resume();
  roomCtx=null;LVkeep=0;stopCpuVis();
  playDur=towerDur(towerBattle);nmoMode=0;
@@ -1744,7 +1744,7 @@ $('nmPrev').onclick=()=>{if(nmoSel>0){nmoSel--;renderNmSel()}};
 $('nmNext').onclick=()=>{if(nmoSel<25){nmoSel++;renderNmSel()}};
 $('nmEnter').onclick=()=>{if(nmoSel>nmBest)return;nmoStage=nmoSel;beginNoMiss()};
 async function beginNoMiss(){
- if(state==='starting'||state==='count')return;const my=++runId;introStop();
+ if(state==='starting'||state==='count')return;bgmStart(1);const my=++runId;introStop();
  ac();AC.resume&&AC.resume();
  roomCtx=null;LVkeep=0;stopCpuVis();towerMode=0;nmoMode=1;
  playDur=NM_DUR;nmoCount=0;nmoReq=nmReq(nmoStage);
@@ -1805,23 +1805,21 @@ $('twBack').onclick=openTowerMode;
 $('twStart').onclick=()=>{towerBattle=1;startTowerBattle()};
 $('twrHome').onclick=()=>{towerMode=0;state='top';show('top');refreshWho()};
 
-// ========== BGM (PRIME TOWER をタップで開始) ==========
-// 待機画面: 0.75倍速ループ。TOWERバトル中: ランク色ごとの速度で、プレイ終了と同時に曲の最後が終わるよう後半から再生
-// 灰・青 0.75倍 / 紫・赤 1倍 / 金 1.25倍 / 虹 1.5倍。TOWER以外のプレイ中は停止
-const BGM_RATE={gray:.75,blue:.75,purple:1,red:1,gold:1.25,rainbow:1.5};
-let bgmA=null,bgmOn=0,bgmMode='idle',bgmT=0;
-function bgmDur(){return bgmA&&isFinite(bgmA.duration)&&bgmA.duration>10?bgmA.duration:208.8}
-function bgmSetRate(r){if(!bgmA)return;bgmA.preservesPitch=true;bgmA.webkitPreservesPitch=true;bgmA.playbackRate=r}
-function bgmStart(){
+// ========== BGM ==========
+// プレイ以外の画面: 0.75倍速ループ。プレイ中(カウントダウン・中断メニュー含む): 停止
+let bgmA=null,bgmOn=0,bgmT=0;
+function bgmStart(inGame){
  try{
   if(!bgmA){
    const b64=($('bgmb64')||{}).textContent||'';if(!b64)return;
    const bin=atob(b64.trim()),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
    bgmA=new Audio(URL.createObjectURL(new Blob([u8],{type:'audio/mpeg'})));
-   bgmA.preload='auto';bgmA.loop=true;bgmA.volume=.6;bgmSetRate(.75);
+   bgmA.preload='auto';bgmA.loop=true;bgmA.volume=.6;
+   bgmA.preservesPitch=true;bgmA.webkitPreservesPitch=true;bgmA.playbackRate=.75;
   }
-  bgmOn=1;bgmMode='idle';
-  const pr=bgmA.play();if(pr&&pr.catch)pr.catch(()=>{});
+  bgmOn=1;
+  // タップ操作内で再生を許可しておく(プレイ開始時は直後に止める)
+  if(bgmA.paused){const pr=bgmA.play();if(pr&&pr.then)pr.then(()=>{if(inGame)bgmA.pause()}).catch(()=>{})}
   if(!bgmT)bgmT=setInterval(bgmTick,200);
  }catch(e){}
 }
@@ -1829,24 +1827,8 @@ function bgmTick(){
  if(!bgmOn||!bgmA)return;
  try{
   const inGame=state==='starting'||state==='count'||state==='play'||state==='pause';
-  const tower=towerMode===1&&!nmoMode;
-  if(document.hidden||(inGame&&!tower)||(inGame&&state==='pause')){
-   if(!bgmA.paused)bgmA.pause();
-   if(inGame&&!tower)bgmMode='off';
-   return;
-  }
-  if(inGame&&tower&&state==='play'){
-   const r=BGM_RATE[themeFromRankLabel(twLabel(towerBattle))]||.75;
-   const remain=Math.max(0,playDur-(performance.now()-t0))/1000;
-   const target=Math.max(0,bgmDur()-r*remain);
-   if(bgmMode!=='tower'){bgmMode='tower';bgmA.loop=false;bgmSetRate(r);bgmA.currentTime=target}
-   else if(Math.abs(bgmA.currentTime-target)>.4&&remain>0)bgmA.currentTime=target;
-   if(bgmA.paused&&remain>0&&target<bgmDur()-.05){const pr=bgmA.play();if(pr&&pr.catch)pr.catch(()=>{})}
-   return;
-  }
-  // 待機(プレイ以外・TOWERのカウントダウン中): 0.75倍速ループ
-  if(bgmMode==='tower'){bgmMode='idle';bgmA.loop=true;bgmSetRate(.75);bgmA.currentTime=0}
-  else if(bgmMode==='off'){bgmMode='idle';bgmA.loop=true;bgmSetRate(.75)}
+  if(document.hidden||inGame){if(!bgmA.paused)bgmA.pause();return}
+  if(bgmA.playbackRate!==.75)bgmA.playbackRate=.75;
   if(bgmA.paused){const pr=bgmA.play();if(pr&&pr.catch)pr.catch(()=>{})}
  }catch(e){}
 }

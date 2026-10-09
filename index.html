@@ -1,4 +1,4 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
@@ -22,12 +22,12 @@ font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","S
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s}
 .screen.on{opacity:1;pointer-events:auto}
 h1{font-weight:200;font-size:clamp(40px,9vw,84px);letter-spacing:.18em;margin:0 0 0 .18em;transition:color .4s,background .4s}
-h1.title-gray,.name-gray,#who.name-gray{color:#d4d4d4}
-h1.title-blue,.name-blue,#who.name-blue{color:#7dd3fc}
-h1.title-purple,.name-purple,#who.name-purple{color:#d8b4fe}
-h1.title-red,.name-red,#who.name-red{color:#fca5a5}
-h1.title-gold,.name-gold,#who.name-gold{background:linear-gradient(105deg,#e0b84a 0%,#f5e08a 28%,#fff9d6 50%,#f5e08a 72%,#e0b84a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
-h1.title-rainbow,.name-rainbow,#who.name-rainbow{background:linear-gradient(90deg,#ff6b6b,#ffb347,#ffe566,#6ee7b7,#7dd3fc,#c4b5fd,#ff6b6b);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:titleRainbow 3.2s linear infinite}
+h1.title-gray,.name-gray,#who.name-gray{color:#8b8b8b}
+h1.title-blue,.name-blue,#who.name-blue{color:#1f6bff}
+h1.title-purple,.name-purple,#who.name-purple{color:#b02cff}
+h1.title-red,.name-red,#who.name-red{color:#ff1f1f}
+h1.title-gold,.name-gold,#who.name-gold{background:linear-gradient(105deg,#d99a00 0%,#ffc800 28%,#ffe45c 50%,#ffc800 72%,#d99a00 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+h1.title-rainbow,.name-rainbow,#who.name-rainbow{background:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd400,#3ddc84,#3b82f6,#8b5cf6,#ff3b3b);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:titleRainbow 3.2s linear infinite}
 @keyframes titleRainbow{0%{background-position:0% 50%}100%{background-position:200% 50%}}
 @media (prefers-reduced-motion:reduce){h1.title-rainbow,h1.name-rainbow,.name-rainbow,#who.name-rainbow{animation:none;background-position:30% 50%}}
 #who.name-gray,#who.name-blue,#who.name-purple,#who.name-red,#who.name-gold,#who.name-rainbow{opacity:1}
@@ -107,11 +107,11 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
 #who .pn.ul,#who .nl.ul{padding-bottom:1px;background-size:100% 1px}
 .big .pn.ul,.big .nl.ul{padding-bottom:4px;background-size:100% 3px}
 .ul-ink{background-image:linear-gradient(var(--fg),var(--fg))}
-.ul-gray{background-image:linear-gradient(#d4d4d4,#d4d4d4)}
-.ul-blue{background-image:linear-gradient(#7dd3fc,#7dd3fc)}
-.ul-purple{background-image:linear-gradient(#d8b4fe,#d8b4fe)}
-.ul-red{background-image:linear-gradient(#fca5a5,#fca5a5)}
-.ul-rainbow{background-image:linear-gradient(90deg,#ff6b6b,#ffb347,#ffe566,#6ee7b7,#7dd3fc,#c4b5fd,#ff6b6b)}
+.ul-gray{background-image:linear-gradient(#8b8b8b,#8b8b8b)}
+.ul-blue{background-image:linear-gradient(#1f6bff,#1f6bff)}
+.ul-purple{background-image:linear-gradient(#b02cff,#b02cff)}
+.ul-red{background-image:linear-gradient(#ff1f1f,#ff1f1f)}
+.ul-rainbow{background-image:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd400,#3ddc84,#3b82f6,#8b5cf6,#ff3b3b)}
 #nmSym{min-width:1.3em;letter-spacing:0}
 </style></head><body>
 <div class="screen on" id="name" style="gap:40px">
@@ -698,18 +698,25 @@ function currentRankLabelFor(name,list,isMe){
  return label||rankLabelFromName(name);
 }
 // 表示用ランク {nm:NO MISSクリア数, tw:CPU47ラベル}。自分は常に現在の到達度、他人は同名の記録のうち最高を採用
+const NMC_KEY='prime_nm_cache';
+let NMC=(()=>{try{return JSON.parse(localStorage.getItem(NMC_KEY))||{}}catch(e){return{}}})();
+function nmCacheUp(base,k){
+ if(!base||!(k>0))return;base=base.toLowerCase();
+ if((NMC[base]||0)<k){NMC[base]=k;try{localStorage.setItem(NMC_KEY,JSON.stringify(NMC))}catch(e){}}
+}
 function ranksFor(name,list,isMe){
  if(isMe||isMyPlayerName(name))return{nm:nmBest,tw:towerBest?twLabel(towerBest):''};
  const base=basePlayerName(name).toLowerCase(),p0=parsePfx(name);
  let bt=0,tw='',bn=0;
  (list||[]).forEach(x=>{const p=parsePfx(x.n);if(p.base.toLowerCase()!==base)return;const v=rankValueFromName(x.n);if(v>bt){bt=v;tw=p.tw}if(p.nm>bn)bn=p.nm});
- return{nm:Math.max(bn,p0.nm),tw:tw||p0.tw};
+ // 他レベルのボードで見えた記録(キャッシュ)も採用 → 他人の端末でも下線が出る
+ const nm=Math.max(bn,p0.nm);nmCacheUp(base,nm);
+ return{nm:Math.max(nm,NMC[base]||0),tw:tw||p0.tw};
 }
-// 名前要素: 左端にランク文字(NO MISS文字+ギリシャ文字)、ランク表記・プレイヤー名の両方にNO MISSランクの色付き下線
+// 名前要素: 左端にランク文字(NO MISS文字+ギリシャ文字)、プレイヤー名にはNO MISSランクの色付き下線
 function setNameEl(e,rk,base){
  e.textContent='';
- const u=nmUl(rk.nm);
- const lb=(rk.nm>0?nmKLetter(rk.nm):'')+(rk.tw||'');
+ const lb=(rk.nm>0?nmKLetter(rk.nm):'')+(rk.tw||''),u=nmUl(rk.nm);
  if(lb){const s=document.createElement('span');s.className='nl'+(u?' ul ul-'+u:'');s.textContent=lb;e.appendChild(s)}
  const p=document.createElement('span');p.className='pn'+(u?' ul ul-'+u:'');p.textContent=base;e.appendChild(p);
 }

@@ -704,14 +704,32 @@ function nmCacheUp(base,k){
  if(!base||!(k>0))return;base=base.toLowerCase();
  if((NMC[base]||0)<k){NMC[base]=k;try{localStorage.setItem(NMC_KEY,JSON.stringify(NMC))}catch(e){}}
 }
+// サーバー保存のランク表 {id:{nm,tw}} (GET /api/ranks)。他人の端末でも下線・ランク文字が出る
+let SRK={},srkAt=0,srkP=null;
+try{const c=JSON.parse(localStorage.getItem('prime_srk')||'null');if(c&&c.m){SRK=c.m;srkAt=0}}catch(e){}
+function fetchRanks(force){
+ if(srkP)return srkP;
+ if(!force&&Date.now()-srkAt<60000)return Promise.resolve();
+ srkP=fetch(API+'/api/ranks').then(r=>r.ok?r.json():null).then(m=>{
+  if(m&&typeof m==='object'){SRK=m;srkAt=Date.now();try{localStorage.setItem('prime_srk',JSON.stringify({m}))}catch(e){}}
+ }).catch(()=>{}).finally(()=>{srkP=null});
+ return srkP;
+}
+function srvRank(base){
+ base=String(base||'').normalize('NFKC').toLowerCase();if(!base)return null;
+ if(SRK[base])return SRK[base];
+ if(base.length>=12){for(const k in SRK)if(k.startsWith(base.slice(0,12)))return SRK[k]}
+ return null;
+}
 function ranksFor(name,list,isMe){
  if(isMe||isMyPlayerName(name))return{nm:nmBest,tw:towerBest?twLabel(towerBest):''};
  const base=basePlayerName(name).toLowerCase(),p0=parsePfx(name);
+ const sv=srvRank(base);
  let bt=0,tw='',bn=0;
  (list||[]).forEach(x=>{const p=parsePfx(x.n);if(p.base.toLowerCase()!==base)return;const v=rankValueFromName(x.n);if(v>bt){bt=v;tw=p.tw}if(p.nm>bn)bn=p.nm});
  // 他レベルのボードで見えた記録(キャッシュ)も採用 → 他人の端末でも下線が出る
  const nm=Math.max(bn,p0.nm);nmCacheUp(base,nm);
- return{nm:Math.max(nm,NMC[base]||0),tw:tw||p0.tw};
+ return{nm:Math.max(nm,NMC[base]||0,sv?sv.nm|0:0),tw:tw||p0.tw||(sv&&sv.tw>0?twLabel(sv.tw):'')};
 }
 // 名前要素: 左端にランク文字(NO MISS文字+ギリシャ文字)、プレイヤー名にはNO MISSランクの色付き下線
 function setNameEl(e,rk,base){
@@ -760,6 +778,7 @@ function worldRows(d){const w=$('world'),b=$('wmore');rows(w,d);w.classList.add(
  b.style.display=d.length>10?'':'none';b.textContent='SHOW ALL '+d.length}
 $('wmore').onclick=()=>{const w=$('world'),f=w.classList.toggle('fold');$('wmore').textContent=f?'SHOW ALL '+w.children.length:'FOLD'};
 async function loadBoard(){const l=bLV;
+ await Promise.race([fetchRanks(),new Promise(r=>setTimeout(r,1200))]);if(l!==bLV)return;
  rows($('mine'),loadMine(l));$('wmore').style.display='none';$('world').innerHTML='<div class="nil">…</div>';
  try{const d=await remoteTop(l);if(l!==bLV)return;worldRows(d)}catch(e){$('wmore').style.display='none';$('world').innerHTML='<div class="nil">OFFLINE'+(e&&e.code?' · '+e.code:'')+'</div>'}
 }
@@ -1342,6 +1361,7 @@ async function loadRoom(){
   const at=d.startAt?d.startAt-(d.now-(t1+t2)/2):0; // 開始時刻を自分の端末の時計に換算
   r0.level=d.level;r0.at=at;$('rmLv').textContent='LEVEL '+d.level;
   $('rmRes').textContent='RESULTS  '+d.list.length+' / '+d.joined;
+  await Promise.race([fetchRanks(),new Promise(r=>setTimeout(r,800))]);if(RM!==r0||state!=='room')return;
   if(d.list.length)rows($('rmList'),d.list.map(x=>({me:x.me,n:String(x.n).slice(0,24),s:x.s,t:x.t})));else $('rmList').innerHTML='';
   if(!d.inRound&&at&&Date.now()<at+1500&&!rmBusy){joinRoom(at);return} // 新ラウンド開始直後 → 自動で参加してカウントダウンへ
   $('rmHere').style.display=d.host&&d.here!=null?'':'none';$('rmHere').textContent='IN ROOM  '+d.here;
@@ -1357,7 +1377,7 @@ async function loadRoom(){
 }
 // ===== 自動アップデート: サーバーのVERが自分より新しければ、安全な画面で自動リロード =====
 // worker.js の VER と同じ値にしておく(デプロイのたびに両方を上げる)
-const VER='2026-10-09.1';
+const VER='2026-10-09.2';
 let newVer='';
 function checkVer(v){if(typeof v==='string'&&v>VER)newVer=v}
 function safeToReload(){return['top','room','end','board','vs','rule','name','intro','tower','twres','delconf','twmode','nmsel','nmres'].includes(state)}
@@ -1682,7 +1702,7 @@ const NM_ULS=['ink','gray','blue','purple','red'];
 // 下線色: Z〜V 黒 / U〜Q 灰 / P〜L 青 / K〜G 紫 / F〜B 赤 / A 虹
 const nmUl=k=>k<=0?'':k>=26?'rainbow':NM_ULS[Math.floor((k-1)/5)];
 function saveNmBest(k){
- if(k>nmBest){nmBest=Math.min(26,k);try{localStorage.setItem('prime_nm_best',String(nmBest))}catch(e){}refreshWho();applyTitleTheme();pushSync()}
+ if(k>nmBest){nmBest=Math.min(26,k);try{localStorage.setItem('prime_nm_best',String(nmBest))}catch(e){}refreshWho();applyTitleTheme();pushSync();setTimeout(()=>fetchRanks(1),1500)}
 }
 function openTowerMode(){towerMode=0;nmoMode=0;state='twmode';show('twmode')}
 function openNmSel(){nmoSel=Math.min(nmBest,25);renderNmSel();state='nmsel';show('nmsel')}

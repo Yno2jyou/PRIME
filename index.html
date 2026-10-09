@@ -1137,6 +1137,7 @@ async function multiDeviceSync(){
 setInterval(multiDeviceSync,3*60*1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)multiDeviceSync()});
 function enterApp(opts){
+ try{const ae=document.activeElement;if(ae&&ae.blur&&/^(INPUT|TEXTAREA)$/.test(ae.tagName))ae.blur();$('nm').blur();$('pw').blur();window.scrollTo(0,0)}catch(e){}
  navAt=performance.now();
  introStop();
  field.innerHTML='';toks=[];

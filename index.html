@@ -1137,6 +1137,7 @@ async function multiDeviceSync(){
 setInterval(multiDeviceSync,3*60*1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)multiDeviceSync()});
 function enterApp(opts){
+ let kb=0;try{kb=/^(INPUT|TEXTAREA)$/.test((document.activeElement||{}).tagName||'')}catch(e){}
  try{const ae=document.activeElement;if(ae&&ae.blur&&/^(INPUT|TEXTAREA)$/.test(ae.tagName))ae.blur();$('nm').blur();$('pw').blur();window.scrollTo(0,0)}catch(e){}
  navAt=performance.now();
  introStop();
@@ -1150,7 +1151,13 @@ function enterApp(opts){
   state='top';show('top');
   return;
  }
- bgmIntroAsk=1;intro();
+ bgmIntroAsk=1;
+ // キーボードが開いていた場合は、閉じてビューポートが戻ってから起動アニメーションを始める(中央に配置するため)
+ if(kb){const vv=window.visualViewport,hh=()=>vv?vv.height:innerHeight;let last=hh(),t0=performance.now(),st=t0;
+  const chk=()=>{const h=hh(),n=performance.now();if(h!==last){last=h;st=n}
+   if(n-st>150||n-t0>1000){window.scrollTo(0,0);intro()}else setTimeout(chk,40)};
+  setTimeout(chk,60);return}
+ intro();
 }
 // ローカル専用アカウントをサーバーへ昇格（他端末から LOGIN 可能にする）
 async function promoteLocalToServer(id,pass,disp,data){

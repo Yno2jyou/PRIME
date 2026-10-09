@@ -715,16 +715,39 @@ function fetchRanks(force){
  }).catch(()=>{}).finally(()=>{srkP=null});
  return srkP;
 }
-function srvRank(base){
+// 保存名は12文字で切られ、ランク接頭辞(例 "Vβ3 ")も文字数に含まれる → 長いIDは途中で切れる。
+// 切られた可能性がある名前(raw 12文字以上)は前方一致で探し、候補が複数でも最高ランクが一致する場合のみ採用
+function srvRank(base,raw){
  base=String(base||'').normalize('NFKC').toLowerCase();if(!base)return null;
  if(SRK[base])return SRK[base];
- if(base.length>=12){for(const k in SRK)if(k.startsWith(base.slice(0,12)))return SRK[k]}
- return null;
+ if(String(raw||'').length<12)return null;
+ let hit=null,amb=false;
+ for(const k in SRK){
+  if(!k.startsWith(base))continue;
+  if(!hit)hit=SRK[k];
+  else if((SRK[k].nm|0)!==(hit.nm|0)||(SRK[k].tw|0)!==(hit.tw|0))amb=true;
+ }
+ return amb?null:hit;
+}
+// サーバーの自分のランクが端末より低い/無い場合、アカウントを再同期して他人の端末にも反映させる
+// (NO MISSクリア時の同期が失敗していても、ランキングを開くたびに自動で復旧)
+let rkFixAt=0;
+async function ensureMyRankSynced(){
+ try{
+  if(!authToken||String(authToken).startsWith('local_')||Date.now()-rkFixAt<30000)return;
+  if(!(nmBest>0||towerBest>0))return;
+  const uid=normId(localStorage.getItem('prime_uid')||PN);
+  const sv=SRK[uid]||SRK[String(PN||'').normalize('NFKC').toLowerCase()];
+  if(sv&&(sv.nm|0)>=nmBest&&(sv.tw|0)>=towerBest)return;
+  rkFixAt=Date.now();
+  await pullAccountProgress();   // 端末とサーバーを統合し、端末の方が進んでいればサーバーへ書き戻す
+  await fetchRanks(1);
+ }catch(e){}
 }
 function ranksFor(name,list,isMe){
  if(isMe||isMyPlayerName(name))return{nm:nmBest,tw:towerBest?twLabel(towerBest):''};
  const base=basePlayerName(name).toLowerCase(),p0=parsePfx(name);
- const sv=srvRank(base);
+ const sv=srvRank(base,name);
  let bt=0,tw='',bn=0;
  (list||[]).forEach(x=>{const p=parsePfx(x.n);if(p.base.toLowerCase()!==base)return;const v=rankValueFromName(x.n);if(v>bt){bt=v;tw=p.tw}if(p.nm>bn)bn=p.nm});
  // 他レベルのボードで見えた記録(キャッシュ)も採用 → 他人の端末でも下線が出る
@@ -778,7 +801,7 @@ function worldRows(d){const w=$('world'),b=$('wmore');rows(w,d);w.classList.add(
  b.style.display=d.length>10?'':'none';b.textContent='SHOW ALL '+d.length}
 $('wmore').onclick=()=>{const w=$('world'),f=w.classList.toggle('fold');$('wmore').textContent=f?'SHOW ALL '+w.children.length:'FOLD'};
 async function loadBoard(){const l=bLV;
- await Promise.race([fetchRanks(),new Promise(r=>setTimeout(r,1200))]);if(l!==bLV)return;
+ await Promise.race([fetchRanks(),new Promise(r=>setTimeout(r,1200))]);if(l!==bLV)return;ensureMyRankSynced();
  rows($('mine'),loadMine(l));$('wmore').style.display='none';$('world').innerHTML='<div class="nil">…</div>';
  try{const d=await remoteTop(l);if(l!==bLV)return;worldRows(d)}catch(e){$('wmore').style.display='none';$('world').innerHTML='<div class="nil">OFFLINE'+(e&&e.code?' · '+e.code:'')+'</div>'}
 }
@@ -1361,7 +1384,7 @@ async function loadRoom(){
   const at=d.startAt?d.startAt-(d.now-(t1+t2)/2):0; // 開始時刻を自分の端末の時計に換算
   r0.level=d.level;r0.at=at;$('rmLv').textContent='LEVEL '+d.level;
   $('rmRes').textContent='RESULTS  '+d.list.length+' / '+d.joined;
-  await Promise.race([fetchRanks(),new Promise(r=>setTimeout(r,800))]);if(RM!==r0||state!=='room')return;
+  await Promise.race([fetchRanks(),new Promise(r=>setTimeout(r,800))]);if(RM!==r0||state!=='room')return;ensureMyRankSynced();
   if(d.list.length)rows($('rmList'),d.list.map(x=>({me:x.me,n:String(x.n).slice(0,24),s:x.s,t:x.t})));else $('rmList').innerHTML='';
   if(!d.inRound&&at&&Date.now()<at+1500&&!rmBusy){joinRoom(at);return} // 新ラウンド開始直後 → 自動で参加してカウントダウンへ
   $('rmHere').style.display=d.host&&d.here!=null?'':'none';$('rmHere').textContent='IN ROOM  '+d.here;

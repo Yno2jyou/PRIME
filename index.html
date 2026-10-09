@@ -472,7 +472,8 @@ function act(t,dir){
   if(!toks.length){
    done++;busy=true;
    const m=mult(spl),mm=clean?CLEAN_BONUS:1,gain=Math.round(cur*m*mm);st.bn=Math.max(st.bn,gain);score+=gain;hudSc();$('cb').textContent=cbBase();
-   if(!nmoMode){showToast(clean?'PERFECT':t.d===0?'PRIME':'PRIME COMPLETE',gain,m*mm);
+   if(nmoMode)nofan();
+   else{showToast(clean?'PERFECT':t.d===0?'PRIME':'PRIME COMPLETE',gain,m*mm);
    if(clean)nofan();else if(t.d>0)[1,3,5].forEach((k,i)=>bell(pit(ch,k),.06,.08+i*.07))}
    setTimeout(()=>{if(state==='play')spawn(T)},t.d===0?220:380);
   }

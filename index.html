@@ -23,10 +23,10 @@ font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","S
 .screen.on{opacity:1;pointer-events:auto}
 h1{font-weight:200;font-size:clamp(40px,9vw,84px);letter-spacing:.18em;margin:0 0 0 .18em;transition:color .4s,background .4s}
 h1.title-gray,.name-gray,#who.name-gray{color:#8b8b8b}
-h1.title-blue,.name-blue,#who.name-blue{color:#1f6bff}
-h1.title-purple,.name-purple,#who.name-purple{color:#b02cff}
-h1.title-red,.name-red,#who.name-red{color:#ff1f1f}
-h1.title-gold,.name-gold,#who.name-gold{background:linear-gradient(105deg,#d99a00 0%,#ffc800 28%,#ffe45c 50%,#ffc800 72%,#d99a00 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+h1.title-blue,.name-blue,#who.name-blue{color:#1a8cff}
+h1.title-purple,.name-purple,#who.name-purple{color:#c23cff}
+h1.title-red,.name-red,#who.name-red{color:#ff2e2e}
+h1.title-gold,.name-gold,#who.name-gold{background:linear-gradient(105deg,#ffb300 0%,#ffd400 28%,#fff060 50%,#ffd400 72%,#ffb300 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
 h1.title-rainbow,.name-rainbow,#who.name-rainbow{background:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd400,#3ddc84,#3b82f6,#8b5cf6,#ff3b3b);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:titleRainbow 3.2s linear infinite}
 @keyframes titleRainbow{0%{background-position:0% 50%}100%{background-position:200% 50%}}
 @media (prefers-reduced-motion:reduce){h1.title-rainbow,h1.name-rainbow,.name-rainbow,#who.name-rainbow{animation:none;background-position:30% 50%}}
@@ -47,7 +47,7 @@ h1.title-rainbow,.name-rainbow,#who.name-rainbow{background:linear-gradient(90de
 #nm,#pw{width:min(560px,80vw);background:transparent;border:0;border-bottom:1px solid var(--line);outline:0;padding:8px 4px;font:inherit;font-size:18px;letter-spacing:.02em;color:var(--fg);text-align:center;border-radius:0;user-select:text;-webkit-user-select:text}
 #nm::placeholder,#pw::placeholder{color:var(--fg);opacity:.2}
 #pw{letter-spacing:.12em}
-.r u{text-decoration:none;flex:1;min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-bottom:4px;margin-bottom:-4px}.r b{flex:none!important}
+.r u{text-decoration:none;flex:1;min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-bottom:2px;margin-bottom:-2px}.r b{flex:none!important}
 #world.fold .r.x{display:none}
 #game.intro .hud{visibility:hidden}#game.intro #quit{pointer-events:none}
 #conf{z-index:10;background:var(--bg)}
@@ -103,14 +103,14 @@ background:transparent;color:inherit;border:1px solid var(--line);border-radius:
 /* ---- NO MISS / RANK UNDERLINE ---- */
 html.has-token #name{opacity:0;transition:none;pointer-events:none}
 .nl{margin-right:.5em}
-.pn.ul,.nl.ul{padding-bottom:2px;background-repeat:no-repeat;background-position:0 100%;background-size:100% 2px}
+.pn.ul,.nl.ul{padding-bottom:1px;background-repeat:no-repeat;background-position:0 100%;background-size:100% 1px}
 #who .pn.ul,#who .nl.ul{padding-bottom:1px;background-size:100% 1px}
-.big .pn.ul,.big .nl.ul{padding-bottom:4px;background-size:100% 3px}
+.big .pn.ul,.big .nl.ul{padding-bottom:2px;background-size:100% 2px}
 .ul-ink{background-image:linear-gradient(var(--fg),var(--fg))}
 .ul-gray{background-image:linear-gradient(#8b8b8b,#8b8b8b)}
-.ul-blue{background-image:linear-gradient(#1f6bff,#1f6bff)}
-.ul-purple{background-image:linear-gradient(#b02cff,#b02cff)}
-.ul-red{background-image:linear-gradient(#ff1f1f,#ff1f1f)}
+.ul-blue{background-image:linear-gradient(#1a8cff,#1a8cff)}
+.ul-purple{background-image:linear-gradient(#c23cff,#c23cff)}
+.ul-red{background-image:linear-gradient(#ff2e2e,#ff2e2e)}
 .ul-rainbow{background-image:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd400,#3ddc84,#3b82f6,#8b5cf6,#ff3b3b)}
 #nmSym{min-width:1.3em;letter-spacing:0}
 </style></head><body>

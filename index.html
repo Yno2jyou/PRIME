@@ -1680,7 +1680,7 @@ function openNmSel(){nmoSel=Math.min(nmBest,25);renderNmSel();state='nmsel';show
 function renderNmSel(){
  const i=nmoSel,locked=i>nmBest,lv=nmLvOf(i);
  const sym=$('nmSym');sym.textContent='';
- const sp=document.createElement('span');sp.className='pn ul ul-'+nmUl(i+1);sp.textContent=nmLetter(i);sym.appendChild(sp);
+ sym.textContent=nmLetter(i);
  sym.style.opacity=locked?.25:1;
  $('nmInfo').textContent=lv?'LEVEL '+lv:'LEVEL 1–5  RANDOM';
  $('nmReqTx').textContent=nmReq(i)+(NM_SPLIT_ONLY?' SPLITS':' STEPS')+'  /  '+(NM_DUR/1000)+' SEC';

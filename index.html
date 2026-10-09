@@ -1662,8 +1662,8 @@ function towerFinish(playerScore){
 // ========== NO MISS (PRIME TOWER / YOU) ==========
 // ステージ Z(最初)〜A(最終)。47秒以内にミス0で規定回数に到達するとクリア。ミスした瞬間に終了(同じステージをやり直し)
 const NM_DUR=47000;
-const NM_REQ=[97,144,191,238,285];   // 各レベル帯(5ランク)の規定回数。Z/U/P/K/F=97 … V/Q/L/G/B=285
-const NM_REQ_A=332;                  // A(最終): レベル1〜5からランダム出題
+const NM_REQ=[49,72,96,119,143];   // 各レベル帯(5ランク)の規定回数(元の97/144/191/238/285の半分)。Z/U/P/K/F=49 … V/Q/L/G/B=143
+const NM_REQ_A=166;                  // A(最終): レベル1〜5からランダム出題
 const NM_SPLIT_ONLY=false;           // true: 分解(右スワイプ)のみカウント / false: 素数の回収(左スワイプ)も含めた正解操作の合計
 const nmReq=i=>i>=25?NM_REQ_A:NM_REQ[i%5];
 const nmLvOf=i=>i>=25?0:Math.floor(i/5)+1;      // 0=ランダム

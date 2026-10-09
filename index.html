@@ -548,7 +548,7 @@ function towerDur(b){
  return 47000;
 }
 async function begin(rm){
- if(state==='starting'||state==='count')return;bgmStart(1);const my=++runId;introStop();
+ if(state==='starting'||state==='count')return;bgmStart();const my=++runId;introStop();
  ac();AC.resume&&AC.resume();
  roomCtx=rm||null;if(rm){if(!LVkeep)LVkeep=LV;LV=rm.level}else if(LVkeep){LV=LVkeep;LVkeep=0}
  playDur=DUR;towerMode=0;nmoMode=0;
@@ -1144,7 +1144,7 @@ function enterApp(opts){
   state='top';show('top');
   return;
  }
- intro();
+ bgmIntroAsk=1;intro();
 }
 // ローカル専用アカウントをサーバーへ昇格（他端末から LOGIN 可能にする）
 async function promoteLocalToServer(id,pass,disp,data){
@@ -1378,6 +1378,7 @@ let RM=null,rmBusy=0;
 const vsMsg=t=>{$('vsMsg').textContent=t||''},rmMsg=t=>{$('rmMsg').textContent=t||''};
 function showHook(id){
  if(id!=='room')clearInterval(roomT);
+ if(id==='top'&&bgmIntroAsk){bgmIntroAsk=0;setTimeout(()=>{try{bgmAsk()}catch(e){}},0)}
  if(id==='top'){if(LVkeep){LV=LVkeep;LVkeep=0}refreshLvT();
   if(urlRoom){const c=urlRoom;urlRoom='';try{history.replaceState(null,'',location.pathname)}catch(e){}setTimeout(()=>{if(state==='top')openRoom(c)},350)}}
 }
@@ -1663,7 +1664,7 @@ function startCpuVis(seed,level,finalScore,skill){
  cpuVis.raf=requestAnimationFrame(tickCpuVis);
 }
 async function beginTower(){
- if(state==='starting'||state==='count')return;bgmStart(1);const my=++runId;introStop();
+ if(state==='starting'||state==='count')return;bgmStart();const my=++runId;introStop();
  ac();AC.resume&&AC.resume();
  roomCtx=null;LVkeep=0;stopCpuVis();
  playDur=towerDur(towerBattle);nmoMode=0;
@@ -1754,7 +1755,7 @@ $('nmPrev').onclick=()=>{if(nmoSel>0){nmoSel--;renderNmSel()}};
 $('nmNext').onclick=()=>{if(nmoSel<25){nmoSel++;renderNmSel()}};
 $('nmEnter').onclick=()=>{if(nmoSel>nmBest)return;nmoStage=nmoSel;beginNoMiss()};
 async function beginNoMiss(){
- if(state==='starting'||state==='count')return;bgmStart(1);const my=++runId;introStop();
+ if(state==='starting'||state==='count')return;bgmStart();const my=++runId;introStop();
  ac();AC.resume&&AC.resume();
  roomCtx=null;LVkeep=0;stopCpuVis();towerMode=0;nmoMode=1;
  playDur=NM_DUR;nmoCount=0;nmoReq=nmReq(nmoStage);
@@ -1816,9 +1817,11 @@ $('twStart').onclick=()=>{towerBattle=1;startTowerBattle()};
 $('twrHome').onclick=()=>{towerMode=0;state='top';show('top');refreshWho()};
 
 // ========== BGM ==========
-// プレイ以外の画面: 0.75倍速ループ。プレイ中(カウントダウン・中断メニュー含む): 停止
+// 全画面(ログイン・TOP・カウントダウン・プレイ中・結果)で1倍速ループ。画面遷移では止めず、シームレスに流し続ける
 // ログイン画面の入力で再生許可を取り、ログイン済みでサイトを開き直した時は 音声ON/OFF の選択を表示
-let bgmA=null,bgmOn=0,bgmT=0,bgmMuted=0,bgmWait=0,bgmHid=0;
+let bgmA=null,bgmC=null,bgmOn=0,bgmT=0,bgmMuted=0,bgmWait=0,bgmHid=0;
+var bgmIntroAsk=0; // ログイン直後のアニメーション後に音声選択を出す(showHookから参照するため var)
+const BGM_GAIN=2.4;
 function bgmStart(inGame){
  try{
   if(bgmMuted)return;
@@ -1826,21 +1829,28 @@ function bgmStart(inGame){
    const b64=($('bgmb64')||{}).textContent||'';if(!b64)return;
    const bin=atob(b64.trim()),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
    bgmA=new Audio(URL.createObjectURL(new Blob([u8],{type:'audio/mpeg'})));
-   bgmA.preload='auto';bgmA.loop=true;bgmA.volume=.6;
-   bgmA.preservesPitch=true;bgmA.webkitPreservesPitch=true;bgmA.playbackRate=.75;
+   bgmA.preload='auto';bgmA.loop=true;bgmA.volume=1;bgmA.playbackRate=1;
+   try{
+    const C=window.AudioContext||window.webkitAudioContext;bgmC=new C();
+    const src=bgmC.createMediaElementSource(bgmA),g=bgmC.createGain(),cp=bgmC.createDynamicsCompressor();
+    g.gain.value=BGM_GAIN;cp.threshold.value=-10;cp.knee.value=12;cp.ratio.value=6;cp.attack.value=.003;cp.release.value=.25;
+    src.connect(g);g.connect(cp);cp.connect(bgmC.destination);
+   }catch(e){bgmC=null;bgmA.volume=1}
   }
-  bgmOn=1;
+  bgmOn=1;if(bgmC&&bgmC.state==='suspended')bgmC.resume().catch(()=>{});
   // タップ操作内で再生を許可しておく(プレイ開始時は直後に止める)
-  if(bgmA.paused){const pr=bgmA.play();if(pr&&pr.then)pr.then(()=>{if(inGame)bgmA.pause()}).catch(()=>{})}
+  if(bgmA.paused){const pr=bgmA.play();if(pr&&pr.catch)pr.catch(()=>{})}
   if(!bgmT)bgmT=setInterval(bgmTick,200);
  }catch(e){}
 }
 function bgmTick(){
  if(!bgmOn||!bgmA)return;
  try{
-  const inGame=state==='starting'||state==='count'||state==='play'||state==='pause';
-  if(bgmMuted||bgmWait||document.hidden||inGame){if(!bgmA.paused)bgmA.pause();return}
-  if(bgmA.playbackRate!==.75)bgmA.playbackRate=.75;
+  // ミュート・画面非表示以外は止めない(カウントダウン・プレイ中・中断メニュー中もシームレスに流し続ける)
+  if(bgmMuted||document.hidden){if(!bgmA.paused)bgmA.pause();return}
+  if(bgmWait)return; // 音声選択の表示中は、停止中なら再生を始めない(流れている曲は止めない)
+  if(bgmA.playbackRate!==1)bgmA.playbackRate=1;
+  if(bgmC&&bgmC.state==='suspended')bgmC.resume().catch(()=>{});
   if(bgmA.paused){const pr=bgmA.play();if(pr&&pr.catch)pr.catch(()=>{})}
  }catch(e){}
 }
@@ -1851,7 +1861,7 @@ function bgmAsk(){
  try{
   const inGame=state==='starting'||state==='count'||state==='play'||state==='pause';
   if(!authToken||inGame||state==='name')return;
-  bgmWait=1;if(bgmA&&!bgmA.paused)bgmA.pause();
+  bgmWait=1;
   $('bgmq').classList.add('on');
  }catch(e){}
 }

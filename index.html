@@ -23,14 +23,19 @@ font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","S
 .screen.on{opacity:1;pointer-events:auto}
 h1{font-weight:200;font-size:clamp(40px,9vw,84px);letter-spacing:.18em;margin:0 0 0 .18em;transition:color .4s,background .4s}
 h1.title-gray,.name-gray,#who.name-gray{color:#8b8b8b}
-h1.title-blue,.name-blue,#who.name-blue{color:#1a8cff}
-h1.title-purple,.name-purple,#who.name-purple{color:#c23cff}
-h1.title-red,.name-red,#who.name-red{color:#ff2e2e}
+h1.title-blue,.name-blue,#who.name-blue{color:#0a7cff}
+h1.title-purple,.name-purple,#who.name-purple{color:#b81dff}
+h1.title-red,.name-red,#who.name-red{color:#ff1414}
 h1.title-gold,.name-gold,#who.name-gold{background:linear-gradient(105deg,#ffb300 0%,#ffd400 28%,#fff060 50%,#ffd400 72%,#ffb300 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
 h1.title-rainbow,.name-rainbow,#who.name-rainbow{background:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd400,#3ddc84,#3b82f6,#8b5cf6,#ff3b3b);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:titleRainbow 3.2s linear infinite}
 @keyframes titleRainbow{0%{background-position:0% 50%}100%{background-position:200% 50%}}
 @media (prefers-reduced-motion:reduce){h1.title-rainbow,h1.name-rainbow,.name-rainbow,#who.name-rainbow{animation:none;background-position:30% 50%}}
 #who.name-gray,#who.name-blue,#who.name-purple,#who.name-red,#who.name-gold,#who.name-rainbow{opacity:1}
+.r u.name-blue,.r u.name-purple,.r u.name-red,.r u.name-gold,.r u.name-rainbow,#who.name-blue,#who.name-purple,#who.name-red,#who.name-gold,#who.name-rainbow{font-weight:600}
+.r u.name-gray{font-weight:500}
+.name-blue{text-shadow:0 0 8px rgba(10,124,255,.45)}
+.name-purple{text-shadow:0 0 8px rgba(184,29,255,.45)}
+.name-red{text-shadow:0 0 8px rgba(255,20,20,.4)}
 .sub{font-size:10px;letter-spacing:.3em;opacity:.5;margin:18px 0 56px .3em}
 .lv{display:flex;gap:2px;justify-content:center}.lv span{font-size:13px;padding:8px 6px;cursor:pointer;opacity:.28;transition:opacity .2s;min-width:22px;text-align:center}.lv span.on{opacity:1}.lv span:hover{opacity:.6}
 .link{font-size:12px;letter-spacing:.3em;cursor:pointer;opacity:1;transition:opacity .2s;margin-left:.3em;padding:12px 16px}

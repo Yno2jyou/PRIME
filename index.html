@@ -117,10 +117,10 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
 .ul-rainbow{background-image:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd400,#3ddc84,#3b82f6,#8b5cf6,#ff3b3b)}
 #nmSym{min-width:1.3em;letter-spacing:0}
 /* ---- 名前の視認性UP (太さは変えない) ---- */
-#who{font-size:13px;font-weight:200;opacity:1!important;letter-spacing:.12em}
+#who{font-size:11px;font-weight:100;opacity:1!important;letter-spacing:.12em}
 #who .pn,#who .nl{opacity:1}
 #who .pn.ul,#who .nl.ul{padding-bottom:2px;background-size:100% 1px}
-.r u{font-size:14px;font-weight:200;opacity:1;padding-bottom:4px;margin-bottom:-4px}
+.r u{font-size:12px;font-weight:100;opacity:1;padding-bottom:4px;margin-bottom:-4px}
 .r u span{opacity:1;font-size:inherit;letter-spacing:inherit}
 .r u .pn.ul,.r u .nl.ul{padding-bottom:2px;background-size:100% 1px}
 :root[data-theme="dark"] h1.title-blue,:root[data-theme="dark"] .name-blue,:root[data-theme="dark"] #who.name-blue{color:#3d95ff}
@@ -1932,7 +1932,11 @@ function bgmTick(){
  }catch(e){}
 }
 // ログイン画面での入力(タップ・キー入力)で音声の再生制限を解除して再生
-['click','touchend','keydown'].forEach(ev=>$('name').addEventListener(ev,()=>{if(state==='name')bgmStart()},{passive:true}));
+// ログアウトせずにタブを閉じて開き直した場合(端末にトークンが残っている)は、ログイン画面の入力でBGMを始めない。
+// → ログイン後の音声ON/OFF選択で「ON」を選ぶまで無音
+const bgmReturning=(()=>{try{return !!localStorage.getItem('prime_token')}catch(e){return false}})();
+const bgmHasStoredToken=()=>{try{return !!localStorage.getItem('prime_token')}catch(e){return false}};
+['click','touchend','keydown'].forEach(ev=>$('name').addEventListener(ev,()=>{if(state==='name'&&!(bgmReturning&&bgmHasStoredToken()))bgmStart()},{passive:true}));
 // ログイン済みでサイトを開き直した時: 音声ON / OFF(斜線) の選択を表示
 function bgmAsk(){
  try{

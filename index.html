@@ -228,10 +228,10 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
 <div class="screen" id="rule"><div class="rl">
  <div class="lab">RULE</div>
  <div class="rg"><div class="rd dr"><span class="n">15</span><span class="m m1">3</span><span class="m m2">5</span></div>
-  <div class="rt">右スワイプ　素数ではない<small>Swipe right · Not prime</small></div></div>
+  <div class="rt">右タップ　素数ではない<small>Tap right · Not prime</small></div></div>
  <div class="rg"><div class="rd dl"><span class="n">7</span><span class="p">+7</span></div>
-  <div class="rt">左スワイプ　素数<small>Swipe left · Prime</small></div></div>
- <div class="rn">素数をすべて集めると得点。ミスは減点。<br>画面の右半分／左半分をタップしてもOK。<br>PCは ← → キーでも操作できます。<small>Collect every prime to score. Mistakes cost points. Tap the right / left half of the screen, or use arrow keys on PC.</small></div>
+  <div class="rt">左タップ　素数<small>Tap left · Prime</small></div></div>
+ <div class="rn">素数をすべて集めると得点。ミスは減点。<br>右スワイプ／左スワイプでもOK。<br>PCは ← → キーでも操作できます。<small>Collect every prime to score. Mistakes cost points. Swiping right / left also works, or use arrow keys on PC.</small></div>
  <div class="link" id="rback" style="margin-top:26px;opacity:.5;font-size:10px">TOP</div>
 </div></div>
 <div class="screen" id="vs"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center">
@@ -1786,7 +1786,7 @@ function towerFinish(playerScore){
 const NM_DUR=47000;
 const NM_REQ=[42,52,62,72,82];     // 各レベル帯(5ランク)の規定回数。Z/U/P/K/F=42 … V/Q/L/G/B=92
 const NM_REQ_A=92;                  // A(最終): レベル1〜5からランダム出題
-const NM_SPLIT_ONLY=false;           // true: 分解(右スワイプ)のみカウント / false: 素数の回収(左スワイプ)も含めた正解操作の合計
+const NM_SPLIT_ONLY=false;           // true: 分解(右タップ)のみカウント / false: 素数の回収(左タップ)も含めた正解操作の合計
 const nmReq=i=>i>=25?NM_REQ_A:NM_REQ[i%5];
 const nmLvOf=i=>i>=25?0:Math.floor(i/5)+1;      // 0=ランダム
 const nmLetter=i=>String.fromCharCode(90-i);     // ステージ番号(0=Z) → 文字

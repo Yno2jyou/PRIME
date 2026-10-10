@@ -1950,8 +1950,20 @@ function setSnd(m){bgmMuted=m?1:0;SFXM=bgmMuted;try{if(SG)SG.gain.value=m?0:4.2}
 $('snd').onclick=()=>{setSnd(!bgmMuted)};
 $('bgmOn').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(0)};
 $('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};
-document.addEventListener('visibilitychange',()=>{if(document.hidden)bgmHid=1;else if(bgmHid){bgmHid=0;bgmAsk()}});
-window.addEventListener('pageshow',e=>{if(e.persisted)bgmAsk()});
+// ホーム画面アプリ等でバックグラウンドから戻った時、音声選択の前に曲が鳴らないよう、離脱の瞬間に止めて保留にする
+function bgmHold(){
+ try{
+  const inGame=state==='starting'||state==='count'||state==='play'||state==='pause';
+  if(bgmA&&!bgmA.paused)bgmA.pause();
+  if(!authToken||inGame||state==='name')return;   // 音声選択を出す場面のみ、選択まで再生を保留
+  bgmWait=1;
+  if(bgmC&&bgmC.state==='running')bgmC.suspend().catch(()=>{});
+ }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){bgmHid=1;bgmHold()}else if(bgmHid){bgmHid=0;bgmAsk()}});
+window.addEventListener('pagehide',()=>{bgmHid=1;bgmHold()});
+document.addEventListener('freeze',()=>{bgmHid=1;bgmHold()});
+window.addEventListener('pageshow',e=>{if(e.persisted){bgmHold();bgmAsk()}});
 // 初期表示時にベスト反映
 refreshWho();applyTitleTheme();
 </script>

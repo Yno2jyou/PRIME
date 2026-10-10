@@ -22,6 +22,8 @@ font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","S
 .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s}
 .screen.on{opacity:1;pointer-events:auto}
 h1{font-weight:200;font-size:clamp(40px,9vw,84px);letter-spacing:.18em;margin:0 0 0 .18em;transition:color .4s,background .4s}
+h1 .tl{display:inline-block;will-change:transform}
+h1.title-gold .tl,h1.title-rainbow .tl{background:inherit;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:inherit}
 h1.title-gray,.name-gray,#who.name-gray{color:#2e9e4f}
 h1.title-blue,.name-blue,#who.name-blue{color:#0a7cff}
 h1.title-purple,.name-purple,#who.name-purple{color:#b81dff}
@@ -1911,7 +1913,7 @@ $('twrHome').onclick=()=>{towerMode=0;state='top';show('top');refreshWho()};
 // ========== BGM ==========
 // 全画面(ログイン・TOP・カウントダウン・プレイ中・結果)で1倍速ループ。画面遷移では止めず、シームレスに流し続ける
 // ログイン画面の入力で再生許可を取り、ログイン済みでサイトを開き直した時は 音声ON/OFF の選択を表示
-let bgmG=null,bgmA=null,bgmC=null,bgmOn=0,bgmT=0,bgmMuted=0,bgmWait=0,bgmHid=0,bgmChosen=0; // bgmChosen: 音声選択画面(またはスピーカーボタン)で選ぶまでは一切鳴らさない
+let bgmAn=null,bgmG=null,bgmA=null,bgmC=null,bgmOn=0,bgmT=0,bgmMuted=0,bgmWait=0,bgmHid=0,bgmChosen=0; // bgmChosen: 音声選択画面(またはスピーカーボタン)で選ぶまでは一切鳴らさない
 var bgmIntroAsk=0; // ログイン直後のアニメーション後に音声選択を出す(showHookから参照するため var)
 const BGM_GAIN=2.4;
 function bgmStart(inGame){
@@ -1927,6 +1929,7 @@ function bgmStart(inGame){
     const src=bgmC.createMediaElementSource(bgmA),g=bgmC.createGain(),cp=bgmC.createDynamicsCompressor();
     bgmG=g;g.gain.value=BGM_GAIN;cp.threshold.value=-10;cp.knee.value=12;cp.ratio.value=6;cp.attack.value=.003;cp.release.value=.25;
     src.connect(g);g.connect(cp);cp.connect(bgmC.destination);
+    try{bgmAn=bgmC.createAnalyser();bgmAn.fftSize=1024;src.connect(bgmAn)}catch(e){bgmAn=null}
    }catch(e){bgmC=null;bgmA.volume=1}
   }
   bgmOn=1;if(bgmC&&bgmC.state==='suspended')bgmC.resume().catch(()=>{});
@@ -1983,6 +1986,51 @@ $('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};
 // ホーム画面アプリ等でバックグラウンドから戻った時、音声選択の前に曲が鳴らないよう、離脱の瞬間に止めて保留にする
 // ログアウト/アカウント削除: BGMを止め、音声の選択を未選択に戻す(再ログイン後に音声選択/スピーカーボタンを押すまで鳴らさない)
 ['touchend','click'].forEach(ev=>document.addEventListener(ev,()=>{if(bgmChosen&&bgmMuted)sfxUnlock()},{passive:true,capture:true}));
+// ========== タイトル演出 ==========
+// RIME: BGMの拍(148 BPM)に合わせて R→I→M→E の順に四拍子で跳ねる
+// P   : サビ(音量が最も大きくなる区間)でだけ、激しさに呼応して独自に振動する
+const TT_BPM=148,TT_OFFSET=.035;           // 拍グリッド(1拍≈405ms)。BGM内の最初の拍の位置(秒)
+const TT_LO=.045,TT_HI=.07;                // サビ判定のRMS閾値(静かな部分≈0.005〜0.03 / サビ≈0.06〜0.08)
+(function(){
+ const h=document.getElementById('titleH1');if(!h)return;
+ const txt=(h.textContent||'PRIME').trim();
+ h.setAttribute('aria-label',txt);h.textContent='';
+ const L=[...txt].map(c=>{const e=document.createElement('span');e.className='tl';e.textContent=c;e.setAttribute('aria-hidden','true');h.appendChild(e);return e});
+ if(L.length<2)return;
+ const P=L[0],R=L.slice(1);
+ const spb=60/TT_BPM,buf=new Float32Array(1024);
+ let lvl=0,beatPrev=-1,reduce=false;
+ try{reduce=matchMedia('(prefers-reduced-motion:reduce)').matches}catch(e){}
+ function rest(){L.forEach(e=>{e.style.transform=''})}
+ function frame(){
+  requestAnimationFrame(frame);
+  if(reduce||!h.offsetWidth)return;
+  const a=(typeof bgmA!=='undefined')?bgmA:null;
+  if(!a||a.paused||a.ended){lvl*=.9;if(lvl<.01){lvl=0;rest()}else{P.style.transform=''}return}
+  // --- RIME: 四拍子で順番に ---
+  const b=(a.currentTime-TT_OFFSET)/spb,bi=Math.floor(b),u=b-bi;
+  const k=((bi%R.length)+R.length)%R.length;        // 今の拍で動く文字
+  const hit=Math.pow(1-Math.min(1,u/.85),2.2);       // 拍頭で最大→減衰
+  R.forEach((e,i)=>{
+   if(i===k){const y=-.16*hit,sc=1+.14*hit;e.style.transform='translateY('+(y*100).toFixed(1)+'%) scale('+sc.toFixed(3)+')'}
+   else e.style.transform=''
+  });
+  // --- P: サビの激しさに応じた振動 ---
+  let tg=0;
+  try{
+   if(typeof bgmAn!=='undefined'&&bgmAn){
+    bgmAn.getFloatTimeDomainData(buf);let s=0;for(let i=0;i<buf.length;i++)s+=buf[i]*buf[i];
+    const rms=Math.sqrt(s/buf.length);tg=Math.min(1,Math.max(0,(rms-TT_LO)/(TT_HI-TT_LO)));
+   }
+  }catch(e){}
+  lvl+=(tg-lvl)*(tg>lvl?.18:.04);                      // 立ち上がりは速く、余韻はゆっくり
+  if(lvl<.02){P.style.transform='';return}
+  const fs=parseFloat(getComputedStyle(h).fontSize)||60,A=lvl*fs*.045;
+  const rx=(Math.random()*2-1)*A,ry=(Math.random()*2-1)*A,rr=(Math.random()*2-1)*lvl*3.2;
+  P.style.transform='translate('+rx.toFixed(2)+'px,'+ry.toFixed(2)+'px) rotate('+rr.toFixed(2)+'deg)';
+ }
+ requestAnimationFrame(frame);
+})();
 function bgmReset(){
  try{
   if(bgmA&&!bgmA.paused)bgmA.pause();

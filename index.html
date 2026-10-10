@@ -1960,12 +1960,15 @@ function bgmAsk(){
   $('bgmq').classList.add('on');
  }catch(e){}
 }
-function setSnd(m){bgmChosen=1;try{if(sfxUnlock.sil&&!sfxUnlock.sil.paused)sfxUnlock.sil.pause()}catch(e){}bgmMuted=m?1:0;SFXM=bgmMuted;try{if(SG)SG.gain.value=m?0:4.2}catch(e){}$('snd').classList.toggle('m',!!m);if(m){if(bgmA&&!bgmA.paused)bgmA.pause()}else{bgmWait=0;bgmStart()}}
+function setSnd(m){bgmChosen=1;bgmMuted=m?1:0;SFXM=0;try{if(SG)SG.gain.value=4.2}catch(e){}   // 斜線(OFF)はBGMのみ停止。効果音は常に鳴らす
+ try{if(m)sfxUnlock();else if(sfxUnlock.sil&&!sfxUnlock.sil.paused)sfxUnlock.sil.pause()}catch(e){}
+ $('snd').classList.toggle('m',!!m);if(m){if(bgmA&&!bgmA.paused)bgmA.pause()}else{bgmWait=0;bgmStart()}}
 $('snd').onclick=()=>{setSnd(!bgmMuted)};
 $('bgmOn').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(0)};
 $('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};
 // ホーム画面アプリ等でバックグラウンドから戻った時、音声選択の前に曲が鳴らないよう、離脱の瞬間に止めて保留にする
 // ログアウト/アカウント削除: BGMを止め、音声の選択を未選択に戻す(再ログイン後に音声選択/スピーカーボタンを押すまで鳴らさない)
+['touchend','click'].forEach(ev=>document.addEventListener(ev,()=>{if(bgmChosen&&bgmMuted)sfxUnlock()},{passive:true,capture:true}));
 function bgmReset(){
  try{
   if(bgmA&&!bgmA.paused)bgmA.pause();

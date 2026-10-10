@@ -2021,7 +2021,7 @@ $('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};
    rot+=.0006+bass*.002;
   }
   cx2.setTransform(dpr,0,0,dpr,0,0);cx2.clearRect(0,0,W,H);
-  const m=Math.min(W,H),cx=W/2,cy=H/2,R0=m*.27,L=m*.2;
+  const m=Math.min(W,H),cx=W/2,cy=H/2,R0=m*.2,L=m*.15;
   cx2.lineCap='round';cx2.lineWidth=Math.max(1.5,2*Math.PI*R0/NB*.42);
   for(let i=0;i<NB;i++){
    const idx=i<HALF?i:NB-1-i,v=Math.min(1,vals[idx]/peak),ang=-Math.PI/2+rot+i/NB*2*Math.PI;

@@ -2021,15 +2021,15 @@ $('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};
    rot+=.0006+bass*.002;
   }
   cx2.setTransform(dpr,0,0,dpr,0,0);cx2.clearRect(0,0,W,H);
-  const cx=W/2,cy=H/2,span=Math.min(W*.86,560),L=Math.min(H*.16,90),step=span/NB;
+  const cx=W/2,cy=H/2,span=W<700?W*.86:Math.min(W*.8,1400),L=Math.min(H*.16,90),step=span/NB;
   cx2.lineCap='round';cx2.lineWidth=Math.max(1.5,step*.5);
   for(let i=0;i<NB;i++){
    const idx=i<HALF?HALF-1-i:i-HALF,v=Math.min(1,vals[idx]/peak),x=cx-span/2+step*(i+.5);   // 中央が低音、左右へ高音(左右対称)
-   const h=1.5+L*v*(.15+.85*v),al=(.07+v*.2)*fade;
+   const h=1.5+L*v*(.15+.85*v),al=(.05+v*.15)*fade;
    cx2.strokeStyle='rgba('+fg+','+al.toFixed(3)+')';
    cx2.beginPath();cx2.moveTo(x,cy-h);cx2.lineTo(x,cy+h);cx2.stroke();
   }
-  cx2.lineWidth=1+bass*1.5;cx2.strokeStyle='rgba('+fg+','+(.14*fade).toFixed(3)+')';
+  cx2.lineWidth=1+bass*1.5;cx2.strokeStyle='rgba('+fg+','+(.1*fade).toFixed(3)+')';
   cx2.beginPath();cx2.moveTo(cx-span/2,cy);cx2.lineTo(cx+span/2,cy);cx2.stroke();
  }
  requestAnimationFrame(frame);

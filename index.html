@@ -315,26 +315,29 @@ function gen(L,rnd,last){
  }
  return last===97?89:97;
 }
-const PEN_RATE=0.33,CLEAN_BONUS=1.5,PCAP=[100,300,900,1600,2900];
+const PEN_RATE=0.33,CLEAN_BONUS=1.5,NOMISS_BONUS=1.5,PCAP=[100,300,900,1600,2900];
 const pv=(p,L)=>Math.min(p,PCAP[L-1]);
 const penOf=(n,L)=>{let m=n,c=0,s=0;for(const p of P){if(p*p>m)break;while(m%p===0){m/=p;c++;s+=pv(p,L)}}if(m>1){c++;s+=pv(m,L)}return Math.max(1,Math.round(s*mult(c-1)*PEN_RATE))};
 function replay(seed,level,ops){
  if(!Number.isInteger(level)||level<1||level>5||!Array.isArray(ops)||ops.length>3000)return null;
- const rnd=mulberry32(seed);let last=0,score=0,done=0,toks=[],prev=-1e9,lastT=0,cur=0,spl=0,pen=0,cl=1;
+ const rnd=mulberry32(seed);let last=0,score=0,done=0,toks=[],prev=-1e9,lastT=0,cur=0,spl=0,pen=0,cl=1,mi=0;
  const spawn=()=>{last=gen(level,rnd,last);toks=[{n:last,d:0}];cur=0;spl=0;pen=penOf(last,level);cl=1};
  spawn();
  for(const o of ops){
   if(!Array.isArray(o))return null;const [idx,dir,t]=o;
   if(!Number.isInteger(idx)||!Number.isInteger(t)||t<0||t>=DUR||t-prev<MINGAP)return null;
   prev=lastT=t;const k=toks[idx];if(!k)return null;
-  if(dir===1){if(isP(k.n)){score-=pen;cl=0;continue}const [a,b]=split(k.n,sr(seed,k.n,done));toks.splice(idx,1,{n:a,d:k.d+1},{n:b,d:k.d+1});spl++}
-  else if(dir===-1){if(!isP(k.n)){score-=pen;cl=0;continue}cur+=pv(k.n,level);toks.splice(idx,1);if(!toks.length){score+=Math.round(cur*mult(spl)*(cl?CLEAN_BONUS:1));done++;spawn()}}
+  if(dir===1){if(isP(k.n)){score-=pen;cl=0;mi++;continue}const [a,b]=split(k.n,sr(seed,k.n,done));toks.splice(idx,1,{n:a,d:k.d+1},{n:b,d:k.d+1});spl++}
+  else if(dir===-1){if(!isP(k.n)){score-=pen;cl=0;mi++;continue}cur+=pv(k.n,level);toks.splice(idx,1);if(!toks.length){score+=Math.round(cur*mult(spl)*(cl?CLEAN_BONUS:1));done++;spawn()}}
   else return null;
  }
- return{score,done,lastT};
+ // NO MISSクリア(ミス0でスコア>0): 合計スコアを1.5倍
+ const perfect=mi===0&&score>0;
+ if(perfect)score=Math.round(score*NOMISS_BONUS);
+ return{score,done,lastT,perfect};
 }
 // ===== core end =====
-if(typeof module!=='undefined')module.exports={mult,DUR,MINGAP,replay,mulberry32,gen,split,isP,penOf,pv,CLEAN_BONUS,sr};
+if(typeof module!=='undefined')module.exports={mult,DUR,MINGAP,replay,mulberry32,gen,split,isP,penOf,pv,CLEAN_BONUS,NOMISS_BONUS,sr};
 let LV=1,bLV=1,roomT=0,LVkeep=0,roomCtx=null,urlRoom=(new URLSearchParams(location.search).get('room')||'').replace(/\D/g,'').slice(0,4),rankP=null,spl=0,rnd=Math.random,seed=0,sid=null,ops=[],lastOp=-1e9,last=0,pen=0;
 // ---------- audio ----------
 let AC,MB;var SG,SFXM=0;
@@ -606,6 +609,8 @@ function tick(){
 function finish(){
  if(nmoMode){$('tm').textContent='00:00';nmoEnd(0,'TIME UP');return}
  if(score<0)score=0;
+ st.nb=0;
+ if(!towerMode&&st.mi===0&&score>0){const b=Math.round(score*NOMISS_BONUS)-score;st.nb=b;score+=b;hudSc()}   // NO MISSクリアボーナス: 合計スコア×1.5
  state='over';$('tm').textContent='00:00';drag=null;$('cb').textContent='';
  toks.forEach(t=>t.el.style.opacity=0);toast.classList.remove('s');
  if(towerMode){
@@ -637,7 +642,7 @@ function skipReveal(){if(!revT.length)return;revT.forEach(clearTimeout);revT=[];
 $('end').addEventListener('click',skipReveal);
 function showStats(){
  const h=st.sp+st.pr,acc=h+st.mi?Math.round(h/(h+st.mi)*100):0;
- const L=[['PRIME COMPLETE',done],['MAX COMBO',st.mc],['BEST NUMBER',st.bn],['SPLITS',st.sp],['PRIMES',st.pr],['MISSES',st.mi],['PENALTY',st.pn?'−'+st.pn:'0'],['ACCURACY',acc+'%'],[roomCtx?'ROOM RANK':'WORLD RANK',rankP?'…':'—']];
+ const L=[['PRIME COMPLETE',done],['MAX COMBO',st.mc],['BEST NUMBER',st.bn],['SPLITS',st.sp],['PRIMES',st.pr],['MISSES',st.mi],...(st.nb>0?[['NO MISS BONUS ×1.5','+'+st.nb]]:[]),['PENALTY',st.pn?'−'+st.pn:'0'],['ACCURACY',acc+'%'],[roomCtx?'ROOM RANK':'WORLD RANK',rankP?'…':'—']];
  $('rl').textContent=(roomCtx?'ROOM '+roomCtx.code+'  ':'')+'LEVEL '+LV+'  SCORE';$('retry').textContent=roomCtx?'ROOM':'RETRY';const el=$('stats');el.textContent='';
  L.forEach(([k,v])=>{const r=document.createElement('div');r.className='r';const a=document.createElement('em');a.style.width='auto';a.style.flex='1';a.textContent=k;const b=document.createElement('b');b.style.fontSize='15px';b.textContent=v;r.append(a,b);el.appendChild(r)});
  const wr=el.lastChild.querySelector('b');rankEl=roomCtx?wr:null;
@@ -1456,7 +1461,7 @@ async function loadRoom(){
 }
 // ===== 自動アップデート: サーバーのVERが自分より新しければ、安全な画面で自動リロード =====
 // worker.js の VER と同じ値にしておく(デプロイのたびに両方を上げる)
-const VER='2026-10-09.2';
+const VER='2026-10-10.1';
 let newVer='';
 function checkVer(v){if(typeof v==='string'&&v>VER)newVer=v}
 function safeToReload(){return['top','room','end','board','vs','rule','name','intro','tower','twres','delconf','twmode','nmsel','nmres'].includes(state)}

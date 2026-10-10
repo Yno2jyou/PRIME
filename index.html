@@ -1895,12 +1895,12 @@ $('twrHome').onclick=()=>{towerMode=0;state='top';show('top');refreshWho()};
 // ========== BGM ==========
 // 全画面(ログイン・TOP・カウントダウン・プレイ中・結果)で1倍速ループ。画面遷移では止めず、シームレスに流し続ける
 // ログイン画面の入力で再生許可を取り、ログイン済みでサイトを開き直した時は 音声ON/OFF の選択を表示
-let bgmG=null,bgmA=null,bgmC=null,bgmOn=0,bgmT=0,bgmMuted=0,bgmWait=0,bgmHid=0;
+let bgmG=null,bgmA=null,bgmC=null,bgmOn=0,bgmT=0,bgmMuted=0,bgmWait=0,bgmHid=0,bgmChosen=0; // bgmChosen: 音声選択画面(またはスピーカーボタン)で選ぶまでは一切鳴らさない
 var bgmIntroAsk=0; // ログイン直後のアニメーション後に音声選択を出す(showHookから参照するため var)
 const BGM_GAIN=2.4;
 function bgmStart(inGame){
  try{
-  if(bgmMuted)return;
+  if(bgmMuted||!bgmChosen)return;
   if(!bgmA){
    const b64=($('bgmb64')||{}).textContent||'';if(!b64)return;
    const bin=atob(b64.trim()),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
@@ -1946,7 +1946,7 @@ function bgmAsk(){
   $('bgmq').classList.add('on');
  }catch(e){}
 }
-function setSnd(m){bgmMuted=m?1:0;SFXM=bgmMuted;try{if(SG)SG.gain.value=m?0:4.2}catch(e){}$('snd').classList.toggle('m',!!m);if(m){if(bgmA&&!bgmA.paused)bgmA.pause()}else{bgmWait=0;bgmStart()}}
+function setSnd(m){bgmChosen=1;bgmMuted=m?1:0;SFXM=bgmMuted;try{if(SG)SG.gain.value=m?0:4.2}catch(e){}$('snd').classList.toggle('m',!!m);if(m){if(bgmA&&!bgmA.paused)bgmA.pause()}else{bgmWait=0;bgmStart()}}
 $('snd').onclick=()=>{setSnd(!bgmMuted)};
 $('bgmOn').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(0)};
 $('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};

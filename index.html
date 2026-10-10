@@ -1987,8 +1987,8 @@ $('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};
 // ホーム画面アプリ等でバックグラウンドから戻った時、音声選択の前に曲が鳴らないよう、離脱の瞬間に止めて保留にする
 // ログアウト/アカウント削除: BGMを止め、音声の選択を未選択に戻す(再ログイン後に音声選択/スピーカーボタンを押すまで鳴らさない)
 ['touchend','click'].forEach(ev=>document.addEventListener(ev,()=>{if(bgmChosen&&bgmMuted)sfxUnlock()},{passive:true,capture:true}));
-// ========== トップ画面の円形オーディオビジュアライザー ==========
-// BGMの周波数スペクトルを円周上のバーで描く(背景用に控えめな濃さ)。トップ画面の表示中、BGM再生中のみ描画
+// ========== トップ画面の一直線オーディオビジュアライザー ==========
+// BGMの周波数スペクトルを一直線上のバーで描く(背景用に控えめな濃さ)。トップ画面の表示中、BGM再生中のみ描画
 (function(){
  const cv=document.getElementById('viz'),top=document.getElementById('top');if(!cv||!top)return;
  const cx2=cv.getContext('2d');
@@ -2021,16 +2021,16 @@ $('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};
    rot+=.0006+bass*.002;
   }
   cx2.setTransform(dpr,0,0,dpr,0,0);cx2.clearRect(0,0,W,H);
-  const m=Math.min(W,H),cx=W/2,cy=H/2,R0=m*.2,L=m*.15;
-  cx2.lineCap='round';cx2.lineWidth=Math.max(1.5,2*Math.PI*R0/NB*.42);
+  const cx=W/2,cy=H/2,span=Math.min(W*.86,560),L=Math.min(H*.16,90),step=span/NB;
+  cx2.lineCap='round';cx2.lineWidth=Math.max(1.5,step*.5);
   for(let i=0;i<NB;i++){
-   const idx=i<HALF?i:NB-1-i,v=Math.min(1,vals[idx]/peak),ang=-Math.PI/2+rot+i/NB*2*Math.PI;
-   const r1=R0+3,r2=R0+3+L*v*(.15+.85*v)+2,al=(.07+v*.2)*fade;
+   const idx=i<HALF?HALF-1-i:i-HALF,v=Math.min(1,vals[idx]/peak),x=cx-span/2+step*(i+.5);   // 中央が低音、左右へ高音(左右対称)
+   const h=1.5+L*v*(.15+.85*v),al=(.07+v*.2)*fade;
    cx2.strokeStyle='rgba('+fg+','+al.toFixed(3)+')';
-   cx2.beginPath();cx2.moveTo(cx+Math.cos(ang)*r1,cy+Math.sin(ang)*r1);cx2.lineTo(cx+Math.cos(ang)*r2,cy+Math.sin(ang)*r2);cx2.stroke();
+   cx2.beginPath();cx2.moveTo(x,cy-h);cx2.lineTo(x,cy+h);cx2.stroke();
   }
-  cx2.lineWidth=1.2;cx2.strokeStyle='rgba('+fg+','+(.16*fade).toFixed(3)+')';
-  cx2.beginPath();cx2.arc(cx,cy,R0*(1-.02+bass*.06),0,Math.PI*2);cx2.stroke();
+  cx2.lineWidth=1+bass*1.5;cx2.strokeStyle='rgba('+fg+','+(.14*fade).toFixed(3)+')';
+  cx2.beginPath();cx2.moveTo(cx-span/2,cy);cx2.lineTo(cx+span/2,cy);cx2.stroke();
  }
  requestAnimationFrame(frame);
 })();

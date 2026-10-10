@@ -117,12 +117,12 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
 .ul-rainbow{background-image:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd400,#3ddc84,#3b82f6,#8b5cf6,#ff3b3b)}
 #nmSym{min-width:1.3em;letter-spacing:0}
 /* ---- 名前の視認性UP (太さは変えない) ---- */
-#who{font-size:14px;opacity:1!important;letter-spacing:.12em}
+#who{font-size:13px;font-weight:200;opacity:1!important;letter-spacing:.12em}
 #who .pn,#who .nl{opacity:1}
-#who .pn.ul,#who .nl.ul{padding-bottom:3px;background-size:100% 2px}
-.r u{font-size:15px;opacity:1;padding-bottom:4px;margin-bottom:-4px}
+#who .pn.ul,#who .nl.ul{padding-bottom:2px;background-size:100% 1px}
+.r u{font-size:14px;font-weight:200;opacity:1;padding-bottom:4px;margin-bottom:-4px}
 .r u span{opacity:1;font-size:inherit;letter-spacing:inherit}
-.r u .pn.ul,.r u .nl.ul{padding-bottom:3px;background-size:100% 2px}
+.r u .pn.ul,.r u .nl.ul{padding-bottom:2px;background-size:100% 1px}
 :root[data-theme="dark"] h1.title-blue,:root[data-theme="dark"] .name-blue,:root[data-theme="dark"] #who.name-blue{color:#3d95ff}
 /* ---- RANK TABLE ---- */
 #rankt{justify-content:flex-start;overflow-y:auto;touch-action:pan-y;padding:calc(env(safe-area-inset-top,0px) + 48px) 24px 48px}
@@ -219,13 +219,10 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
 </div></div>
 <div class="screen" id="rankt"><div class="bd" style="text-align:center">
  <div class="lab">RANK TABLE</div>
- <div class="rk-note" style="margin-bottom:22px">PRIME TOWER のランク早見表<br>Rank reference for PRIME TOWER</div>
- <div class="lab" style="margin-top:6px">CPU 47 <span style="opacity:.7">· 文字の色 / TITLE COLOR</span></div>
+ <div class="lab" style="margin-top:6px">CPU 47 <span style="opacity:.7">/ TITLE COLOR</span></div>
  <table class="rt2" id="rkTw"></table>
- <div class="rk-note">各ランク5段階 (例: β1 → β5)。CPU 47 の戦いに勝つと1つ進みます。<br>Ω は 46 戦目、∞ は最終の 47 戦目。<br>タイトル「PRIME」と名前の色もランクで変わります。</div>
- <div class="lab" style="margin-top:34px">NO MISS <span style="opacity:.7">· 名前の下線 / UNDERLINE</span></div>
+ <div class="lab" style="margin-top:34px">NO MISS <span style="opacity:.7">/ UNDERLINE</span></div>
  <table class="rt2" id="rkNm"></table>
- <div class="rk-note">Z から A まで全26ステージ。47秒以内にミス0で規定回数に到達するとクリア。<br>クリアした最高の文字が名前の左に付き、下線の色が変わります。</div>
  <div class="link" id="rktBack" style="margin-top:30px;opacity:.5;font-size:10px">BACK</div>
 </div></div>
 <div class="screen" id="rule"><div class="rl">
@@ -1869,14 +1866,14 @@ function renderRankTable(){
   const b=document.createElement('td');b.className='n';b.textContent=name;
   const c=document.createElement('td');c.className='v';c.textContent=val+(me?'  ◀ YOU':'');
   tr.appendChild(a);tr.appendChild(b);tr.appendChild(c);t.appendChild(tr)};
- TW_RANKS.forEach(r=>{
-  const th=titleThemeOf(r.lo),rng=r.hi===r.lo?r.sym:r.sym+'1–'+r.sym+'5',bt=r.hi===r.lo?'BATTLE '+r.lo:'BATTLE '+r.lo+'–'+r.hi;
+ TW_RANKS.slice().reverse().forEach(r=>{
+  const th=titleThemeOf(r.lo),rng=r.hi===r.lo?r.sym:r.sym+'5–'+r.sym+'1',bt=r.hi===r.lo?'BATTLE '+r.lo:'BATTLE '+r.lo+'–'+r.hi;
   row(tw,rng,th?'name-'+th:'','',r.name,bt,cur===r)});
  // NO MISS: Z(i=0)…A(i=25)。5文字ごとに同じ下線色・同じレベル
- for(let g=0;g<6;g++){
+ for(let g=5;g>=0;g--){
   const i0=g*5,i1=Math.min(25,i0+4),k=i0+1,ul=nmUl(k);
-  const lo=nmLetter(i0),hi=nmLetter(i1),sym=g===5?'A':lo+' – '+hi;
-  const reqs=g===5?'92 STEPS · RANDOM':[0,1,2,3,4].map(d=>nmReq(i0+d)).join(' / ')+' STEPS';
+  const lo=nmLetter(i0),hi=nmLetter(i1),sym=g===5?'A':hi+' – '+lo;
+  const reqs=g===5?'92 STEPS · RANDOM':[4,3,2,1,0].map(d=>nmReq(i0+d)).join(' / ')+' STEPS';
   const me=nmBest>0&&Math.floor((Math.min(nmBest,26)-1)/5)===g;
   const tr=document.createElement('tr');if(me)tr.className='me';
   const a=document.createElement('td');a.className='s';const sp=document.createElement('span');sp.className='rk-ul';sp.textContent=sym;

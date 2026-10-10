@@ -116,6 +116,26 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
 .ul-red{background-image:linear-gradient(#ff2e2e,#ff2e2e)}
 .ul-rainbow{background-image:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd400,#3ddc84,#3b82f6,#8b5cf6,#ff3b3b)}
 #nmSym{min-width:1.3em;letter-spacing:0}
+/* ---- 名前の視認性UP (太さは変えない) ---- */
+#who{font-size:14px;opacity:1!important;letter-spacing:.12em}
+#who .pn,#who .nl{opacity:1}
+#who .pn.ul,#who .nl.ul{padding-bottom:3px;background-size:100% 2px}
+.r u{font-size:15px;opacity:1;padding-bottom:4px;margin-bottom:-4px}
+.r u span{opacity:1;font-size:inherit;letter-spacing:inherit}
+.r u .pn.ul,.r u .nl.ul{padding-bottom:3px;background-size:100% 2px}
+:root[data-theme="dark"] h1.title-blue,:root[data-theme="dark"] .name-blue,:root[data-theme="dark"] #who.name-blue{color:#3d95ff}
+/* ---- RANK TABLE ---- */
+#rankt{justify-content:flex-start;overflow-y:auto;touch-action:pan-y;padding:calc(env(safe-area-inset-top,0px) + 48px) 24px 48px}
+#rankt .bd{margin:0 auto}
+.rt2{width:100%;border-collapse:collapse;margin-bottom:8px}
+.rt2 td{padding:9px 4px;border-bottom:1px solid var(--line);font-size:13px;font-weight:300;vertical-align:middle}
+.rt2 td.s{font-size:20px;width:34%;white-space:nowrap}
+.rt2 td.n{letter-spacing:.08em;white-space:nowrap}
+.rt2 td.v{text-align:right;opacity:.6;font-size:11px;letter-spacing:.06em;white-space:nowrap}
+.rt2 tr.me td{border-bottom-color:var(--fg)}
+.rt2 tr.me td.v{opacity:1;font-weight:400}
+.rk-note{font-size:10px;line-height:1.9;letter-spacing:.1em;opacity:.55;text-align:center;margin:6px 0 4px}
+.rk-ul{display:inline-block;padding-bottom:3px;background-repeat:no-repeat;background-position:0 100%;background-size:100% 2px}
 /* ---- BGM選択(復帰時) ---- */
 #bgmq{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;gap:28px;background:var(--bg);color:var(--fg)}
 #bgmq.on{display:flex}
@@ -141,8 +161,8 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
 <div class="screen" id="delconf"><div style="font-size:13px;letter-spacing:.15em;font-weight:300;text-align:center;padding:0 24px">アカウントを削除しますか？<br><span style="display:block;font-size:10px;opacity:.45;letter-spacing:.12em;margin-top:12px">進捗・スコアは復元できません</span></div>
  <div class="row" style="margin-top:36px"><div class="link" id="delYes" style="color:var(--neg)">削除する</div><div class="link" id="delNo" style="opacity:.5">キャンセル</div></div></div>
 <div class="screen" id="top">
- <div class="link" id="who" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;font-size:10px;opacity:.4;margin:0"></div>
- <div class="link" id="topLogout" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;margin-top:18px;font-size:9px;opacity:.35;letter-spacing:.14em;display:none">LOGOUT</div>
+ <div class="link" id="who" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;margin:0"></div>
+ <div class="link" id="topLogout" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;margin-top:30px;font-size:9px;opacity:.35;letter-spacing:.14em;display:none">LOGOUT</div>
  <button id="snd" type="button" aria-label="音声 ON/OFF"><svg class="on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg><svg class="off" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/><path d="M3 3l18 18"/></svg></button>
  <button id="thm" type="button" aria-label="ライト/ダーク切り替え"><svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></svg><svg class="moon" viewBox="0 0 24 24"><path d="M20.5 13.4A8.6 8.6 0 1 1 10.6 3.5a6.9 6.9 0 0 0 9.9 9.9z"/></svg></button>
  <h1 id="titleH1">PRIME</h1><div class="sub" style="margin:12px 0 28px .3em">47 SECONDS</div>
@@ -168,7 +188,8 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
   <div><div class="link" id="twYou" style="font-size:16px;margin:0">YOU</div><div class="lab" style="margin:0;text-align:center;opacity:.4">NO MISS</div></div>
   <div><div class="link" id="twCpu" style="font-size:16px;margin:0">CPU</div><div class="lab" style="margin:0;text-align:center;opacity:.4">CPU 47</div></div>
  </div>
- <div class="link" id="twmBack" style="opacity:.5;font-size:10px;margin-top:30px">TOP</div>
+ <div class="link" id="rktbtn" style="opacity:.7;font-size:11px;letter-spacing:.18em;margin-top:30px;padding:4px 1.2em;border-bottom:1px solid var(--line)">RANK TABLE</div>
+ <div class="link" id="twmBack" style="opacity:.5;font-size:10px;margin-top:18px">TOP</div>
 </div></div>
 <div class="screen" id="nmsel"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center;padding-top:calc(env(safe-area-inset-top,0px) + 48px)">
  <div class="lab">NO MISS</div>
@@ -195,6 +216,17 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
  <div class="big" id="twrResult" style="margin:8px 0 4px">WIN</div>
  <div id="twrScores" style="width:100%;max-width:280px;margin-top:28px"></div>
  <div class="row" style="margin-top:36px"><div class="link" id="twrNext">NEXT</div><div class="link" id="twrHome" style="opacity:.5">TOP</div></div>
+</div></div>
+<div class="screen" id="rankt"><div class="bd" style="text-align:center">
+ <div class="lab">RANK TABLE</div>
+ <div class="rk-note" style="margin-bottom:22px">PRIME TOWER のランク早見表<br>Rank reference for PRIME TOWER</div>
+ <div class="lab" style="margin-top:6px">CPU 47 <span style="opacity:.7">· 文字の色 / TITLE COLOR</span></div>
+ <table class="rt2" id="rkTw"></table>
+ <div class="rk-note">各ランク5段階 (例: β1 → β5)。CPU 47 の戦いに勝つと1つ進みます。<br>Ω は 46 戦目、∞ は最終の 47 戦目。<br>タイトル「PRIME」と名前の色もランクで変わります。</div>
+ <div class="lab" style="margin-top:34px">NO MISS <span style="opacity:.7">· 名前の下線 / UNDERLINE</span></div>
+ <table class="rt2" id="rkNm"></table>
+ <div class="rk-note">Z から A まで全26ステージ。47秒以内にミス0で規定回数に到達するとクリア。<br>クリアした最高の文字が名前の左に付き、下線の色が変わります。</div>
+ <div class="link" id="rktBack" style="margin-top:30px;opacity:.5;font-size:10px">BACK</div>
 </div></div>
 <div class="screen" id="rule"><div class="rl">
  <div class="lab">RULE</div>
@@ -542,7 +574,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('resize',layout);
 // ---------- flow ----------
-function show(id,q){['name','top','game','end','board','rule','vs','room','tower','twres','delconf','twmode','nmsel','nmres'].forEach(s=>{const e=$(s),on=s===id;
+function show(id,q){['name','top','game','end','board','rule','rankt','vs','room','tower','twres','delconf','twmode','nmsel','nmres'].forEach(s=>{const e=$(s),on=s===id;
  if(q&&!on&&e.classList.contains('on')){e.style.transition='none';e.classList.remove('on');void e.offsetWidth;e.style.transition=''}else e.classList.toggle('on',on)});showHook(id)}
 const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 let playDur=DUR;
@@ -1826,6 +1858,39 @@ $('twYou').onclick=openNmSel;
 $('twCpu').onclick=openTower;
 $('twmBack').onclick=()=>{state='top';show('top')};
 $('twbtn').onclick=()=>{bgmStart();openTowerMode()};
+// ===== RANK TABLE =====
+const RK_UL={ink:'var(--fg)',gray:'#2e9e4f',blue:'#1a8cff',purple:'#c23cff',red:'#ff2e2e',rainbow:'linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd400,#3ddc84,#3b82f6,#8b5cf6,#ff3b3b)'};
+function renderRankTable(){
+ const tw=$('rkTw'),nm=$('rkNm');tw.textContent='';nm.textContent='';
+ const cur=towerBest?twRankOf(towerBest):null;
+ const row=(t,sym,symCls,symStyle,name,val,me)=>{
+  const tr=document.createElement('tr');if(me)tr.className='me';
+  const a=document.createElement('td');a.className='s';const sp=document.createElement('span');sp.textContent=sym;if(symCls)sp.className=symCls;if(symStyle)sp.setAttribute('style',symStyle);a.appendChild(sp);
+  const b=document.createElement('td');b.className='n';b.textContent=name;
+  const c=document.createElement('td');c.className='v';c.textContent=val+(me?'  ◀ YOU':'');
+  tr.appendChild(a);tr.appendChild(b);tr.appendChild(c);t.appendChild(tr)};
+ TW_RANKS.forEach(r=>{
+  const th=titleThemeOf(r.lo),rng=r.hi===r.lo?r.sym:r.sym+'1–'+r.sym+'5',bt=r.hi===r.lo?'BATTLE '+r.lo:'BATTLE '+r.lo+'–'+r.hi;
+  row(tw,rng,th?'name-'+th:'','',r.name,bt,cur===r)});
+ // NO MISS: Z(i=0)…A(i=25)。5文字ごとに同じ下線色・同じレベル
+ for(let g=0;g<6;g++){
+  const i0=g*5,i1=Math.min(25,i0+4),k=i0+1,ul=nmUl(k);
+  const lo=nmLetter(i0),hi=nmLetter(i1),sym=g===5?'A':lo+' – '+hi;
+  const reqs=g===5?'92 STEPS · RANDOM':[0,1,2,3,4].map(d=>nmReq(i0+d)).join(' / ')+' STEPS';
+  const me=nmBest>0&&Math.floor((Math.min(nmBest,26)-1)/5)===g;
+  const tr=document.createElement('tr');if(me)tr.className='me';
+  const a=document.createElement('td');a.className='s';const sp=document.createElement('span');sp.className='rk-ul';sp.textContent=sym;
+  sp.style.backgroundImage=ul==='rainbow'||ul==='ink'?(ul==='ink'?'linear-gradient(var(--fg),var(--fg))':RK_UL.rainbow):'linear-gradient('+RK_UL[ul]+','+RK_UL[ul]+')';a.appendChild(sp);
+  const b=document.createElement('td');b.className='n';b.textContent=g===5?'FINAL':'LEVEL '+(g+1);
+  const c=document.createElement('td');c.className='v';c.textContent=reqs+(me?'  ◀ YOU':'');
+  tr.appendChild(a);tr.appendChild(b);tr.appendChild(c);nm.appendChild(tr);
+ }
+}
+function openRankTable(){renderRankTable();state='rankt';show('rankt');$('rankt').scrollTop=0}
+function closeRankTable(){navAt=performance.now();state='twmode';show('twmode')}
+$('rktbtn').onclick=openRankTable;$('rktBack').onclick=closeRankTable;
+document.addEventListener('keydown',e=>{if(state==='rankt'&&(e.key==='Escape'||e.key==='Enter')){e.preventDefault();closeRankTable()}});
+
 $('twBack').onclick=openTowerMode;
 $('twStart').onclick=()=>{towerBattle=1;startTowerBattle()};
 $('twrHome').onclick=()=>{towerMode=0;state='top';show('top');refreshWho()};

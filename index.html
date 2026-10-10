@@ -1932,11 +1932,15 @@ function bgmTick(){
  }catch(e){}
 }
 // ログイン画面での入力(タップ・キー入力)で音声の再生制限を解除して再生
-// ログアウトせずにタブを閉じて開き直した場合(端末にトークンが残っている)は、ログイン画面の入力でBGMを始めない。
-// → ログイン後の音声ON/OFF選択で「ON」を選ぶまで無音
-const bgmReturning=(()=>{try{return !!localStorage.getItem('prime_token')}catch(e){return false}})();
-const bgmHasStoredToken=()=>{try{return !!localStorage.getItem('prime_token')}catch(e){return false}};
-['click','touchend','keydown'].forEach(ev=>$('name').addEventListener(ev,()=>{if(state==='name'&&!(bgmReturning&&bgmHasStoredToken()))bgmStart()},{passive:true}));
+// ログイン画面のタップ・入力で「効果音」の再生だけを許可する(起動アニメーションの効果音用)。
+// BGMは音声選択画面 / スピーカーボタンで選ぶまで鳴らさない
+function sfxUnlock(){
+ try{
+  const A=ac();if(A.resume)A.resume().catch(()=>{});
+  if(!sfxUnlock.done){sfxUnlock.done=1;const b=A.createBuffer(1,1,22050),n=A.createBufferSource();n.buffer=b;n.connect(A.destination);n.start(0)}   // iOS: ジェスチャー内で無音再生して解除
+ }catch(e){}
+}
+['click','touchend','keydown'].forEach(ev=>$('name').addEventListener(ev,()=>{if(state==='name')sfxUnlock()},{passive:true}));
 // ログイン済みでサイトを開き直した時: 音声ON / OFF(斜線) の選択を表示
 function bgmAsk(){
  try{

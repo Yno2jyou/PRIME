@@ -662,8 +662,13 @@ $('cy').onclick=toTop;
 const API='https://prime.yno2jyou.workers.dev';
 async function call(p,data){const r=await fetch(API+'/api/'+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
  if(!r.ok){const e=new Error('http');e.code=r.status;throw e}return r.json()}
-const mineSet=()=>{try{return new Set(JSON.parse(localStorage.getItem('prime_mine'))||[])}catch(e){return new Set()}};
-const remember=id=>{if(id==null)return;try{const a=[...mineSet(),id].slice(-300);localStorage.setItem('prime_mine',JSON.stringify(a))}catch(e){}};
+// ---- 記録はアカウントにのみ保持する（ブラウザ(localStorage)には保存・合算しない）----
+let MINE={1:[],2:[],3:[],4:[],5:[]};   // 自分のTOP5（ログイン中アカウントの進捗）
+let MINE_IDS=new Set();                 // このセッションで提出したID（自分の記録の目印）
+let progressReady=false;                // アカウントの進捗を読み込み済みか（未読込のまま保存してサーバーを上書きしない）
+function resetProgressState(){towerBest=0;nmBest=0;MINE={1:[],2:[],3:[],4:[],5:[]};MINE_IDS=new Set();progressReady=false}
+const mineSet=()=>MINE_IDS;
+const remember=id=>{if(id==null)return;MINE_IDS.add(id);if(MINE_IDS.size>300)MINE_IDS.delete(MINE_IDS.values().next().value)};
 async function remoteTop(l){
  const r=await fetch(API+'/api/top?level='+l);if(!r.ok){const e=new Error('http');e.code=r.status;throw e}
  const m=mineSet();
@@ -675,10 +680,12 @@ async function remoteTop(l){
 }
 let PN=(()=>{try{return localStorage.getItem('prime_name')||''}catch(e){return''}})();
 const LK=l=>'prime47_best_'+l;
-const loadMine=l=>{try{return JSON.parse(localStorage.getItem(LK(l)))||[]}catch(e){return[]}};
+const loadMine=l=>MINE[l]||[];
+// 旧版がブラウザに保存していた記録は削除（以後は読み込まない）
+try{['prime_tower_best','prime_nm_best','prime_mine'].forEach(k=>localStorage.removeItem(k));for(let l=1;l<=5;l++)localStorage.removeItem(LK(l))}catch(e){}
 function submit(){
  if(!roomCtx&&score<=0)return;const ts=Date.now();
- if(!roomCtx)try{const a=loadMine(LV);a.push({s:score,t:ts,n:displayName()});a.sort((x,y)=>y.s-x.s);localStorage.setItem(LK(LV),JSON.stringify(a.slice(0,5)));pushSync()}catch(e){}
+ if(!roomCtx)try{const a=loadMine(LV).slice();a.push({s:score,t:ts,n:displayName()});a.sort((x,y)=>y.s-x.s);MINE[LV]=a.slice(0,5);pushSync()}catch(e){}
  if(sid){const id=sid;sid=null;const subName=displayName();
   rankP=roomCtx?call('room/submit',{id,cid:CID,name:subName,ops}):call('submit',{id,name:subName,ops}).then(x=>{remember(x.id);return x});rankP.catch(()=>{})}
 }
@@ -953,6 +960,8 @@ async function serverLoginWithVariants(id,pass,disp){
 function emptyProgress(name){
  return{name:name||'ANON',towerBest:0,nmBest:0,theme:'light',mine:{1:[],2:[],3:[],4:[],5:[]},ts:Date.now()};
 }
+// ログイン/登録時にブラウザ側から引き継ぐのは表示設定(テーマ)のみ。最高記録などの記録は一切引き継がない
+function browserBase(id){const p=emptyProgress(id);try{p.theme=localStorage.getItem('prime_theme')||'light'}catch(e){}return p}
 function collectProgress(){
  const mine={};
  for(let l=1;l<=5;l++)mine[l]=loadMine(l);
@@ -984,9 +993,7 @@ function loadAccountProgress(d){
  PN=String(d.name||PN||'ANON').slice(0,16);
  try{localStorage.setItem('prime_name',PN)}catch(e){}
  towerBest=Math.max(0,+d.towerBest||0);
- try{localStorage.setItem('prime_tower_best',String(towerBest))}catch(e){}
  nmBest=Math.min(26,Math.max(0,+d.nmBest||0));
- try{localStorage.setItem('prime_nm_best',String(nmBest))}catch(e){}
  const th=d.theme==='dark'?'dark':'light';
  try{localStorage.setItem('prime_theme',th)}catch(e){}
  const root=document.documentElement,tc=document.querySelector('meta[name="theme-color"]');
@@ -994,8 +1001,9 @@ function loadAccountProgress(d){
  else{root.removeAttribute('data-theme');if(tc)tc.setAttribute('content','#ffffff')}
  for(let l=1;l<=5;l++){
   const list=d.mine&&Array.isArray(d.mine[l])?d.mine[l]:[];
-  try{localStorage.setItem(LK(l),JSON.stringify(list.slice(0,5)))}catch(e){}
+  MINE[l]=list.slice(0,5);
  }
+ progressReady=true;
 }
 function normId(id){return String(id||'').trim().slice(0,16).toLowerCase()}
 // 表示用ID: 入力の大文字小文字を保持（認証キーは normId で小文字統一）
@@ -1097,7 +1105,7 @@ async function doResetPass(){
  if(!rec){authMsg('NO LOCAL ACCOUNT');authBusy=0;return}
  authMsg('RESET…');
  try{
-  const browserProgress=collectProgress();
+  const browserProgress=browserBase(key);
   const canonHash=await sha256(key+':'+pass);
   const data=mergeProgress(rec.data||emptyProgress(key),browserProgress);
   data.name=preferName(typedId(),preferName(data.name,key));
@@ -1124,7 +1132,7 @@ function progressFingerprint(d){
  return parts.join('|');
 }
 async function saveAccountProgress(){
- if(!authToken)return;
+ if(!authToken||!progressReady)return;
  const data=collectProgress();
  if(String(authToken).startsWith('local_')){
   try{
@@ -1148,13 +1156,13 @@ async function pullAccountProgress(){
  }
  try{
   const r=await call('auth/pull',{token:authToken});
-  if(r&&r.data){
-   // 端末の進捗とサーバーを統合（高い方・スコア合算）→ 複数端末対応
-   const browser=collectProgress();
-   const merged=mergeProgress(r.data,browser);
+  if(r&&!r.error){
+   // ログイン中アカウント自身の進捗とサーバーを統合（複数端末対応）。ブラウザに保存された記録は使わない
+   const base=(r.data&&typeof r.data==='object')?r.data:null;
+   const merged=mergeProgress(base||emptyProgress(PN),collectProgress());
    loadAccountProgress(merged);
    // 統合結果がサーバーより進んでいれば書き戻し（他端末へ反映）
-   if(progressFingerprint(merged)!==progressFingerprint(r.data)){
+   if(progressFingerprint(merged)!==progressFingerprint(base||emptyProgress(PN))){
     try{await call('auth/sync',{token:authToken,data:merged})}catch(e){}
    }
   }
@@ -1237,7 +1245,7 @@ async function doAuth(mode){
  authMsg(mode==='register'?'REGISTER…':'LOGIN…');
  $('authReset').style.display='none';
  try{
-  const browserProgress=collectProgress();
+  const browserProgress=browserBase(id);
   const hash=await sha256(id+':'+pass);
   let r;
   // 新規登録: ローカルに同じIDがあれば即拒否
@@ -1278,7 +1286,7 @@ async function doAuth(mode){
   }
   authToken=r.token||'';
   try{localStorage.setItem('prime_token',authToken);try{sessionStorage.setItem('prime_sess','1')}catch(e){}localStorage.setItem('prime_uid',id)}catch(e){}
-  loadAccountProgress(r.data||mergeProgress(emptyProgress(id),browserProgress));
+  resetProgressState();loadAccountProgress(r.data||mergeProgress(emptyProgress(id),browserProgress));
   if(disp){PN=preferName(disp,PN);try{localStorage.setItem('prime_name',PN)}catch(e){}}
   await saveAccountProgress();
   authMsg('');pw.value='';authBusy=0;refreshLogoutBtn();enterApp();
@@ -1292,10 +1300,10 @@ async function doAuth(mode){
    else authMsg('WRONG ID / PASS');
   }else if(e&&e.name==='TypeError'){
    try{
-    r=await doAuthLocal(mode,id,pass,collectProgress(),disp);
+    r=await doAuthLocal(mode,id,pass,browserBase(id),disp);
     authToken=r.token||'';
     try{localStorage.setItem('prime_token',authToken);try{sessionStorage.setItem('prime_sess','1')}catch(e){}localStorage.setItem('prime_uid',id)}catch(e3){}
-    loadAccountProgress(r.data||emptyProgress(id));
+    resetProgressState();loadAccountProgress(r.data||emptyProgress(id));
     if(disp){PN=preferName(disp,PN);try{localStorage.setItem('prime_name',PN)}catch(e3){}}
     authMsg('');pw.value='';authBusy=0;refreshLogoutBtn();enterApp();
    }catch(e2){
@@ -1321,6 +1329,7 @@ async function doLogout(){
   localStorage.removeItem('prime_token');try{sessionStorage.removeItem('prime_sess')}catch(e){}
   // uid は残してもよいがセッションは切る
  }catch(e){}
+ resetProgressState();   // 次にログインする別アカウントへ記録を持ち越さない
  pw.value='';
  authMsg('LOGGED OUT');
  try{bgmReset()}catch(e){}
@@ -1356,7 +1365,7 @@ async function doDeleteAccount(){
   localStorage.removeItem('prime_mine');
   for(let l=1;l<=5;l++)localStorage.removeItem(LK(l));
  }catch(e){}
- PN='';towerBest=0;nmBest=0;
+ PN='';resetProgressState();
  nm.value='';pw.value='';
  authMsg('DELETED');
  try{bgmReset()}catch(e){}
@@ -1390,13 +1399,15 @@ document.addEventListener('DOMContentLoaded',async()=>{
  if(authToken){
   // ログイン済み: ログイン画面は一度も出さず、保存済みの進捗で即TOPを表示。サーバー同期は表示後に背景で行う
   try{
+   let pp=null;
    if(String(authToken).startsWith('local_'))await pullAccountProgress();
+   else{pp=pullAccountProgress();await Promise.race([pp,new Promise(r=>setTimeout(r,1200))])}   // 記録はアカウントから読むので、表示前に短時間だけ待つ
    if(!PN){try{PN=localStorage.getItem('prime_uid')||''}catch(e){}}
    const tp=$('top');tp.style.transition='none';
    enterApp({skipIntro:true});
    void tp.offsetWidth;tp.style.transition='';setTimeout(bgmAsk,0);
    HT.classList.remove('has-token');
-   if(!String(authToken).startsWith('local_'))pullAccountProgress().then(()=>{if(!PN){try{PN=localStorage.getItem('prime_uid')||''}catch(e){}}refreshWho();applyTitleTheme()}).catch(()=>{});
+   if(pp)pp.then(()=>{if(!PN){try{PN=localStorage.getItem('prime_uid')||''}catch(e){}}refreshWho();applyTitleTheme()}).catch(()=>{});
    return;
   }catch(e){
    try{localStorage.removeItem('prime_token');authToken=''}catch(e2){}
@@ -1461,7 +1472,7 @@ async function loadRoom(){
 }
 // ===== 自動アップデート: サーバーのVERが自分より新しければ、安全な画面で自動リロード =====
 // worker.js の VER と同じ値にしておく(デプロイのたびに両方を上げる)
-const VER='2026-10-10.1';
+const VER='2026-10-10.2';
 let newVer='';
 function checkVer(v){if(typeof v==='string'&&v>VER)newVer=v}
 function safeToReload(){return['top','room','end','board','vs','rule','name','intro','tower','twres','delconf','twmode','nmsel','nmres'].includes(state)}
@@ -1537,8 +1548,6 @@ $('rmBack').onclick=()=>{state='top';show('top')};
 $('start').onclick=()=>begin();$('retry').onclick=()=>roomCtx?backToRoom():begin();$('home').onclick=()=>{state='top';show('top')};
 // ========== PRIME TOWER 〜回廊〜 ==========
 let towerMode=0,towerBattle=1,towerBest=0,cpuScore=0,nmBest=0,nmoMode=0,nmoStage=0,nmoCount=0,nmoReq=0,qLV=1,nmoSel=0,nmoFirst=0;
-try{towerBest=+localStorage.getItem('prime_tower_best')||0}catch(e){}
-try{nmBest=Math.min(26,Math.max(0,+localStorage.getItem('prime_nm_best')||0))}catch(e){}
 const TW_RANKS=[
  {lo:1,hi:5,sym:'Z',name:'Prologue',en:'Prologue'},
  {lo:6,hi:10,sym:'α',name:'Alpha',en:'Alpha'},
@@ -1631,7 +1640,7 @@ function applyTitleTheme(){
  document.querySelectorAll('[data-me="1"]').forEach(e=>paintNameEl(e,1));
 }
 function saveTowerBest(b){
- if(b>towerBest){towerBest=b;try{localStorage.setItem('prime_tower_best',String(towerBest))}catch(e){}refreshWho();applyTitleTheme();pushSync()}
+ if(b>towerBest){towerBest=b;refreshWho();applyTitleTheme();pushSync()}
 }
 function openTower(){
  towerMode=0;towerBattle=1;
@@ -1786,7 +1795,7 @@ const NM_ULS=['ink','gray','blue','purple','red'];
 // 下線色: Z〜V 黒 / U〜Q 灰 / P〜L 青 / K〜G 紫 / F〜B 赤 / A 虹
 const nmUl=k=>k<=0?'':k>=26?'rainbow':NM_ULS[Math.floor((k-1)/5)];
 function saveNmBest(k){
- if(k>nmBest){nmBest=Math.min(26,k);try{localStorage.setItem('prime_nm_best',String(nmBest))}catch(e){}refreshWho();applyTitleTheme();pushSync();setTimeout(()=>fetchRanks(1),1500)}
+ if(k>nmBest){nmBest=Math.min(26,k);refreshWho();applyTitleTheme();pushSync();setTimeout(()=>fetchRanks(1),1500)}
 }
 function openTowerMode(){towerMode=0;nmoMode=0;state='twmode';show('twmode')}
 function openNmSel(){nmoSel=Math.min(nmBest,25);renderNmSel();state='nmsel';show('nmsel')}

@@ -1988,27 +1988,38 @@ $('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};
 // ログアウト/アカウント削除: BGMを止め、音声の選択を未選択に戻す(再ログイン後に音声選択/スピーカーボタンを押すまで鳴らさない)
 ['touchend','click'].forEach(ev=>document.addEventListener(ev,()=>{if(bgmChosen&&bgmMuted)sfxUnlock()},{passive:true,capture:true}));
 // ========== トップ画面の一直線オーディオビジュアライザー ==========
-// BGMの周波数スペクトルを一直線上のバーで描く(背景用に控えめな濃さ)。トップ画面の表示中、BGM再生中のみ描画
+// BGMの周波数スペクトルを一直線上のバーで描く(背景用に控えめな濃さ)。トップ画面の表示中に描画(バーはBGM再生中のみ。中央の細い線は常時表示)
 (function(){
  const cv=document.getElementById('viz'),top=document.getElementById('top');if(!cv||!top)return;
  const cx2=cv.getContext('2d');
  const NB=120,HALF=NB/2,vals=new Float32Array(HALF),bins=[];
- let W=0,H=0,dpr=1,bin=null,fg='0,0,0',fgT=0,fade=0,peak=.4,bass=0,rot=0,reduce=false;
+ let W=0,H=0,dpr=1,bin=null,fg='0,0,0',fgT=0,fade=0,peak=.4,bass=0,reduce=false;
  try{reduce=matchMedia('(prefers-reduced-motion:reduce)').matches}catch(e){}
  function size(){dpr=Math.min(2,window.devicePixelRatio||1);const r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=Math.max(1,Math.round(W*dpr));cv.height=Math.max(1,Math.round(H*dpr))}
- window.addEventListener('resize',size);size();
+ window.addEventListener('resize',()=>{size();idleOK=0});size();
  function readFg(){ // テーマ(ライト/ダーク)の文字色をRGBで取得
   const c=getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();let r=0,g=0,b=0;
   if(/^#/.test(c)){let h=c.slice(1);if(h.length===3)h=h.split('').map(x=>x+x).join('');r=parseInt(h.slice(0,2),16);g=parseInt(h.slice(2,4),16);b=parseInt(h.slice(4,6),16)}
   fg=r+','+g+','+b}
+ let idleOK=0;
+ function geom(){return{cx:W/2,cy:H/2,span:W<700?W*.86:Math.min(W*.8,1400)}}
+ function baseline(extraA,lw){const g=geom();cx2.setTransform(dpr,0,0,dpr,0,0);cx2.lineCap='round';
+  cx2.lineWidth=lw;cx2.strokeStyle='rgba('+fg+','+(.06+extraA).toFixed(3)+')';
+  cx2.beginPath();cx2.moveTo(g.cx-g.span/2,g.cy);cx2.lineTo(g.cx+g.span/2,g.cy);cx2.stroke()}
  function frame(now){
   requestAnimationFrame(frame);
   const a=(typeof bgmA!=='undefined')?bgmA:null,an=(typeof bgmAn!=='undefined')?bgmAn:null;
   const live=!reduce&&top.classList.contains('on')&&a&&!a.paused&&an&&!document.hidden;
-  if(!live){ if(fade>.01){fade*=.9}else{ if(fade>0){fade=0;cx2.clearRect(0,0,cv.width,cv.height)} return } }
-  else fade+=(1-fade)*.08;
   if(!W||!H){size();if(!W)return}
-  if(now-fgT>500){readFg();fgT=now}
+  if(now-fgT>500){const o=fg;readFg();fgT=now;if(o!==fg)idleOK=0}
+  if(!live){
+   if(fade>.01){fade*=.9;bass*=.9}
+   else{
+    fade=0;bass=0;
+    if(!idleOK){cx2.setTransform(dpr,0,0,dpr,0,0);cx2.clearRect(0,0,cv.width,cv.height);baseline(0,1);idleOK=1}   // BGMオフ時も中央の細い線だけは残す
+    return
+   }
+  }else{fade+=(1-fade)*.08;idleOK=0}
   if(live){
    if(!bin){bin=new Uint8Array(an.frequencyBinCount);const sr=(bgmC&&bgmC.sampleRate)||44100,hz=sr/an.fftSize;
     for(let i=0;i<HALF;i++){const f0=60*Math.pow(9000/60,i/HALF),f1=60*Math.pow(9000/60,(i+1)/HALF);bins.push([Math.max(1,Math.floor(f0/hz)),Math.max(2,Math.ceil(f1/hz))])}}
@@ -2018,19 +2029,17 @@ $('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};
     let v=n?s/n/255:0;v=Math.pow(v,1.4);if(v>mx)mx=v;vals[i]+=(v-vals[i])*(v>vals[i]?.5:.12)}
    peak+=((Math.max(.35,mx))-peak)*(mx>peak?.2:.003);   // 静かな部分でも見えるよう自動調整
    let bs=0;for(let k=1;k<8;k++)bs+=bin[k];bass+=((bs/7/255)-bass)*.3;
-   rot+=.0006+bass*.002;
   }
   cx2.setTransform(dpr,0,0,dpr,0,0);cx2.clearRect(0,0,W,H);
-  const cx=W/2,cy=H/2,span=W<700?W*.86:Math.min(W*.8,1400),L=Math.min(H*.16,90),step=span/NB;
+  const {cx,cy,span}=geom(),L=Math.min(H*.16,90),step=span/NB;
   cx2.lineCap='round';cx2.lineWidth=Math.max(1.5,step*.5);
   for(let i=0;i<NB;i++){
    const idx=i<HALF?HALF-1-i:i-HALF,v=Math.min(1,vals[idx]/peak),x=cx-span/2+step*(i+.5);   // 中央が低音、左右へ高音(左右対称)
-   const h=1.5+L*v*(.15+.85*v),al=(.05+v*.15)*fade;
+   const h=1.5+L*v*(.15+.85*v),al=(.03+v*.1)*fade;
    cx2.strokeStyle='rgba('+fg+','+al.toFixed(3)+')';
    cx2.beginPath();cx2.moveTo(x,cy-h);cx2.lineTo(x,cy+h);cx2.stroke();
   }
-  cx2.lineWidth=1+bass*1.5;cx2.strokeStyle='rgba('+fg+','+(.1*fade).toFixed(3)+')';
-  cx2.beginPath();cx2.moveTo(cx-span/2,cy);cx2.lineTo(cx+span/2,cy);cx2.stroke();
+  baseline(.02*fade,1+bass*1.5*fade);
  }
  requestAnimationFrame(frame);
 })();

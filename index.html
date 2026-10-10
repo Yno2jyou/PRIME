@@ -1318,6 +1318,7 @@ async function doLogout(){
  }catch(e){}
  pw.value='';
  authMsg('LOGGED OUT');
+ try{bgmReset()}catch(e){}
  refreshLogoutBtn();
  $('who').textContent='';
  // タイトル色などはアカウント依存のためリセットはしない（再ログインで復元）
@@ -1353,6 +1354,7 @@ async function doDeleteAccount(){
  PN='';towerBest=0;nmBest=0;
  nm.value='';pw.value='';
  authMsg('DELETED');
+ try{bgmReset()}catch(e){}
  refreshLogoutBtn();
  $('who').textContent='';
  applyTitleTheme();
@@ -1937,6 +1939,14 @@ function bgmTick(){
 function sfxUnlock(){
  try{
   const A=ac();if(A.resume)A.resume().catch(()=>{});
+  try{
+   if(!sfxUnlock.sil){
+    const sr=8000,n=sr,u=new Uint8Array(44+n),dv=new DataView(u.buffer),W=(o,t)=>{for(let i=0;i<t.length;i++)u[o+i]=t.charCodeAt(i)};
+    W(0,'RIFF');dv.setUint32(4,36+n,true);W(8,'WAVE');W(12,'fmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,sr,true);dv.setUint32(28,sr,true);dv.setUint16(32,1,true);dv.setUint16(34,8,true);W(36,'data');dv.setUint32(40,n,true);u.fill(128,44);
+    const a=new Audio(URL.createObjectURL(new Blob([u],{type:'audio/wav'})));a.loop=true;a.volume=1;sfxUnlock.sil=a;
+   }
+   if(sfxUnlock.sil.paused){const pr=sfxUnlock.sil.play();if(pr&&pr.catch)pr.catch(()=>{})}   // 無音ループで再生セッションを確保 → 消音スイッチでも効果音が鳴る
+  }catch(e){}
   if(!sfxUnlock.done){sfxUnlock.done=1;const b=A.createBuffer(1,1,22050),n=A.createBufferSource();n.buffer=b;n.connect(A.destination);n.start(0)}   // iOS: ジェスチャー内で無音再生して解除
  }catch(e){}
 }
@@ -1950,15 +1960,26 @@ function bgmAsk(){
   $('bgmq').classList.add('on');
  }catch(e){}
 }
-function setSnd(m){bgmChosen=1;bgmMuted=m?1:0;SFXM=bgmMuted;try{if(SG)SG.gain.value=m?0:4.2}catch(e){}$('snd').classList.toggle('m',!!m);if(m){if(bgmA&&!bgmA.paused)bgmA.pause()}else{bgmWait=0;bgmStart()}}
+function setSnd(m){bgmChosen=1;try{if(sfxUnlock.sil&&!sfxUnlock.sil.paused)sfxUnlock.sil.pause()}catch(e){}bgmMuted=m?1:0;SFXM=bgmMuted;try{if(SG)SG.gain.value=m?0:4.2}catch(e){}$('snd').classList.toggle('m',!!m);if(m){if(bgmA&&!bgmA.paused)bgmA.pause()}else{bgmWait=0;bgmStart()}}
 $('snd').onclick=()=>{setSnd(!bgmMuted)};
 $('bgmOn').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(0)};
 $('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};
 // ホーム画面アプリ等でバックグラウンドから戻った時、音声選択の前に曲が鳴らないよう、離脱の瞬間に止めて保留にする
+// ログアウト/アカウント削除: BGMを止め、音声の選択を未選択に戻す(再ログイン後に音声選択/スピーカーボタンを押すまで鳴らさない)
+function bgmReset(){
+ try{
+  if(bgmA&&!bgmA.paused)bgmA.pause();
+  if(sfxUnlock.sil&&!sfxUnlock.sil.paused)sfxUnlock.sil.pause();
+  bgmOn=0;bgmChosen=0;bgmMuted=0;bgmWait=0;SFXM=0;
+  if(SG)SG.gain.value=4.2;
+  $('snd').classList.remove('m');$('bgmq').classList.remove('on');
+ }catch(e){}
+}
 function bgmHold(){
  try{
   const inGame=state==='starting'||state==='count'||state==='play'||state==='pause';
   if(bgmA&&!bgmA.paused)bgmA.pause();
+  try{if(sfxUnlock.sil&&!sfxUnlock.sil.paused)sfxUnlock.sil.pause()}catch(e){}
   if(!authToken||inGame||state==='name')return;   // 音声選択を出す場面のみ、選択まで再生を保留
   bgmWait=1;
   if(bgmC&&bgmC.state==='running')bgmC.suspend().catch(()=>{});

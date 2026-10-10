@@ -443,7 +443,7 @@ function layout(){if(state==='intro')return;
   e.style.transform=`translate(${t.x-t.w/2}px,${t.y-t.s/2}px)`;x+=t.w});y+=r.h});
 }
 function spawn(tt){
- qLV=nmoMode?(nmoStage>=25?1+Math.floor(rnd()*5):Math.floor(nmoStage/5)+1):LV;const n=last=gen(qLV,rnd,last);cur=0;spl=0;ch=0;pen=penOf(n,qLV);clean=1;
+ qLV=nmoMode?(nmoStage>=25?1+Math.floor(rnd()*5):Math.floor(nmoStage/5)+1):LV;let n=gen(qLV,rnd,last);if(nmoMode&&nmoStage<25&&qLV>=2){for(let g=0;g<50&&isP(n);g++)n=gen(qLV,rnd,last);if(isP(n))n=60}last=n;cur=0;spl=0;ch=0;pen=penOf(n,qLV);clean=1;
  $('cb').textContent=cbBase();
  const t=mk(n,0,field.clientWidth/2,field.clientHeight/2);layout();busy=false;
 }
@@ -1739,8 +1739,8 @@ function towerFinish(playerScore){
 // ========== NO MISS (PRIME TOWER / YOU) ==========
 // ステージ Z(最初)〜A(最終)。47秒以内にミス0で規定回数に到達するとクリア。ミスした瞬間に終了(同じステージをやり直し)
 const NM_DUR=47000;
-const NM_REQ=[42,62,72,82,92];     // 各レベル帯(5ランク)の規定回数。Z/U/P/K/F=42 … V/Q/L/G/B=92
-const NM_REQ_A=112;                  // A(最終): レベル1〜5からランダム出題
+const NM_REQ=[42,52,62,72,82];     // 各レベル帯(5ランク)の規定回数。Z/U/P/K/F=42 … V/Q/L/G/B=92
+const NM_REQ_A=92;                  // A(最終): レベル1〜5からランダム出題
 const NM_SPLIT_ONLY=false;           // true: 分解(右スワイプ)のみカウント / false: 素数の回収(左スワイプ)も含めた正解操作の合計
 const nmReq=i=>i>=25?NM_REQ_A:NM_REQ[i%5];
 const nmLvOf=i=>i>=25?0:Math.floor(i/5)+1;      // 0=ランダム

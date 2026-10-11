@@ -363,7 +363,7 @@ function swish(dir,v=.03){try{const A=ac(),t=A.currentTime,n=Math.floor(A.sample
  f.frequency.setValueAtTime(dir>0?700:2400,t);f.frequency.exponentialRampToValueAtTime(dir>0?2400:700,t+.09);
  const g=A.createGain();g.gain.value=v;s.connect(f);f.connect(g);g.connect(MB);s.start(t)}catch(e){}}
 function uiTap(){try{bell(note(3),.042)}catch(e){}}
-document.addEventListener('pointerdown',e=>{const el=e.target.closest('.link,button,.lv span,#quit,#thm,#snd,#bgmOn,#bgmOff');if(el&&!el.disabled&&el.id!=='start'&&!el.closest('#field'))uiTap()},{passive:true});
+document.addEventListener('pointerdown',e=>{const el=e.target.closest('.link,button,.lv span,#quit,#thm,#snd,#bgmOn,#bgmOff');if(el&&!el.disabled&&!el.closest('#field'))uiTap()},{passive:true});
 // ---------- intro: すだれ算 — 素因数分解を、起動音の和音ごとに1段ずつ ----------
 let introT=[];
 function introStop(){introT.forEach(clearTimeout);introT=[];gameEl.classList.remove('intro')}
@@ -752,14 +752,8 @@ function currentRankLabelFor(name,list,isMe){
   if(towerBest)return twLabel(towerBest);
   return '';
  }
- const base=basePlayerName(name);
- let best=0,label='';
- (list||[]).forEach(x=>{
-  if(basePlayerName(x.n).toLowerCase()!==base.toLowerCase())return;
-  const v=rankValueFromName(x.n);
-  if(v>best){best=v;label=rankLabelFromName(x.n)}
- });
- return label||rankLabelFromName(name);
+ // 他人も「その順位を取った時点」ではなく現在の最高ランク（ranksFor と同じ判定）
+ return ranksFor(name,list,false).tw;
 }
 // 表示用ランク {nm:NO MISSクリア数, tw:CPU47ラベル}。自分は常に現在の到達度、他人は同名の記録のうち最高を採用
 const NMC_KEY='prime_nm_cache';
@@ -812,11 +806,13 @@ function ranksFor(name,list,isMe){
  if(isMe||isMyPlayerName(name))return{nm:nmBest,tw:towerBest?twLabel(towerBest):''};
  const base=basePlayerName(name).toLowerCase(),p0=parsePfx(name);
  const sv=srvRank(base,name);
- let bt=0,tw='',bn=0;
- (list||[]).forEach(x=>{const p=parsePfx(x.n);if(p.base.toLowerCase()!==base)return;const v=rankValueFromName(x.n);if(v>bt){bt=v;tw=p.tw}if(p.nm>bn)bn=p.nm});
+ let bt=0,bn=0;
+ (list||[]).forEach(x=>{const p=parsePfx(x.n);if(p.base.toLowerCase()!==base)return;const v=rankValueFromName(x.n);if(v>bt)bt=v;if(p.nm>bn)bn=p.nm});
  // 他レベルのボードで見えた記録(キャッシュ)も採用 → 他人の端末でも下線が出る
  const nm=Math.max(bn,p0.nm);nmCacheUp(base,nm);
- return{nm:Math.max(nm,NMC[base]||0,sv?sv.nm|0:0),tw:tw||p0.tw||(sv&&sv.tw>0?twLabel(sv.tw):'')};
+ // CPU47ランク: 名前に付いた接頭辞・同ボードの記録は「その順位を取った時点」のランクなので、サーバーの現在の最高到達と比べて最大を採用
+ const twv=Math.min(47,Math.max(bt,rankValueFromName(name),sv?sv.tw|0:0));
+ return{nm:Math.max(nm,NMC[base]||0,sv?sv.nm|0:0),tw:twv>0?twLabel(twv):''};
 }
 // 名前要素: 左端にランク文字(NO MISS文字+ギリシャ文字)、プレイヤー名にはNO MISSランクの色付き下線
 function setNameEl(e,rk,base){

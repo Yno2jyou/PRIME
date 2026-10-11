@@ -17,9 +17,10 @@ try{if(localStorage.getItem("prime_token")&&sessionStorage.getItem("prime_sess")
 :root{--bg:#fff;--fg:#000;--line:rgba(0,0,0,.2);--neg:#c0392b;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 :root[data-theme="dark"]{--bg:#000;--fg:#fff;--line:rgba(255,255,255,.28);--neg:#ff6b5b;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);overflow:hidden;overscroll-behavior:none;
+body{position:fixed;top:0;left:0;right:0;bottom:0;width:100%}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;text-size-adjust:100%;
 font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","Segoe UI",system-ui,sans-serif;font-variant-numeric:tabular-nums}
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s;-webkit-backface-visibility:hidden;backface-visibility:hidden;contain:layout}
 .screen.on{opacity:1;pointer-events:auto}
 #viz{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #top>*{z-index:1}#top>#viz{z-index:0}
@@ -39,7 +40,7 @@ h1.title-rainbow,.name-rainbow,#who.name-rainbow{background:linear-gradient(90de
 .link:hover{opacity:.45}
 #game{touch-action:none;cursor:grab;transition:opacity .25s}
 .hud{position:absolute;top:calc(env(safe-area-inset-top,0px) + 18px);font-size:11px;letter-spacing:.22em;opacity:.55;pointer-events:none}
-#field{z-index:1}.hud{z-index:3}#cd{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font-weight:200;font-size:clamp(80px,26vw,240px);pointer-events:none}
+#field{z-index:1}.hud{z-index:3}#cd{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;font-weight:200;font-size:clamp(80px,26vw,240px);pointer-events:none;will-change:transform,opacity;-webkit-backface-visibility:hidden;backface-visibility:hidden;white-space:nowrap;overflow:hidden;line-height:1}
 #sc{left:22px}#tm{left:0;right:0;text-align:center}#quit{right:14px;cursor:pointer;pointer-events:auto;padding:12px 8px;margin:-12px -8px;top:calc(env(safe-area-inset-top,0px) + 18px);transition:opacity .2s}#quit:hover{opacity:.3}
 #game:not(.on) #quit{pointer-events:none}
 #conf{z-index:5;background:var(--bg);transition:opacity .2s}
@@ -575,7 +576,7 @@ addEventListener('keydown',e=>{
  else if(state==='twres'&&e.key==='Escape'){towerMode=0;state='top';show('top');refreshWho()}
   else if(e.key==='Enter'&&!e.repeat&&(state==='top'||state==='end')&&performance.now()-navAt>400)(roomCtx&&state==='end'?backToRoom():begin());
 });
-addEventListener('resize',layout);
+(function(){let raf=0,lw=innerWidth,lh=innerHeight;addEventListener('resize',()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const w=innerWidth,h=innerHeight;if(w===lw&&h===lh)return;lw=w;lh=h;layout()})})})();
 // ---------- flow ----------
 function show(id,q){['name','top','game','end','board','rule','rankt','vs','room','tower','twres','delconf','twmode','nmsel','nmres'].forEach(s=>{const e=$(s),on=s===id;
  if(q&&!on&&e.classList.contains('on')){e.style.transition='none';e.classList.remove('on');void e.offsetWidth;e.style.transition=''}else e.classList.toggle('on',on)});showHook(id)}
@@ -1996,7 +1997,7 @@ $('bgmOff').onclick=()=>{$('bgmq').classList.remove('on');bgmWait=0;setSnd(1)};
  let W=0,H=0,dpr=1,bin=null,fg='0,0,0',fgT=0,fade=0,peak=.4,bass=0,reduce=false;
  try{reduce=matchMedia('(prefers-reduced-motion:reduce)').matches}catch(e){}
  function size(){dpr=Math.min(2,window.devicePixelRatio||1);const r=cv.getBoundingClientRect();W=r.width;H=r.height;cv.width=Math.max(1,Math.round(W*dpr));cv.height=Math.max(1,Math.round(H*dpr))}
- window.addEventListener('resize',()=>{size();idleOK=0});size();
+ (function(){let raf=0,lw=0,lh=0;window.addEventListener('resize',()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const w=innerWidth,h=innerHeight;if(w===lw&&h===lh)return;lw=w;lh=h;size();idleOK=0})})})();size();
  function readFg(){ // テーマ(ライト/ダーク)の文字色をRGBで取得
   const c=getComputedStyle(document.documentElement).getPropertyValue('--fg').trim();let r=0,g=0,b=0;
   if(/^#/.test(c)){let h=c.slice(1);if(h.length===3)h=h.split('').map(x=>x+x).join('');r=parseInt(h.slice(0,2),16);g=parseInt(h.slice(2,4),16);b=parseInt(h.slice(4,6),16)}

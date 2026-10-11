@@ -363,7 +363,7 @@ function swish(dir,v=.03){try{const A=ac(),t=A.currentTime,n=Math.floor(A.sample
  f.frequency.setValueAtTime(dir>0?700:2400,t);f.frequency.exponentialRampToValueAtTime(dir>0?2400:700,t+.09);
  const g=A.createGain();g.gain.value=v;s.connect(f);f.connect(g);g.connect(MB);s.start(t)}catch(e){}}
 function uiTap(){try{bell(note(3),.042)}catch(e){}}
-document.addEventListener('pointerdown',e=>{const el=e.target.closest('.link,button,.lv span,#quit,#thm,#snd,#bgmOn,#bgmOff');if(el&&!el.disabled&&!el.closest('#field'))uiTap()},{passive:true});
+document.addEventListener('pointerdown',e=>{const el=e.target.closest('.link,button,.lv span,#quit,#thm,#snd,#bgmOn,#bgmOff');if(el&&!el.disabled&&el.id!=='start'&&!el.closest('#field'))uiTap()},{passive:true});
 // ---------- intro: すだれ算 — 素因数分解を、起動音の和音ごとに1段ずつ ----------
 let introT=[];
 function introStop(){introT.forEach(clearTimeout);introT=[];gameEl.classList.remove('intro')}

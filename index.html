@@ -20,8 +20,9 @@ try{if(localStorage.getItem("prime_token")&&sessionStorage.getItem("prime_sess")
 body{position:fixed;top:0;left:0;right:0;bottom:0;width:100%}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%;text-size-adjust:100%;
 font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue","Hiragino Sans","Segoe UI",system-ui,sans-serif;font-variant-numeric:tabular-nums}
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .5s;-webkit-backface-visibility:hidden;backface-visibility:hidden;contain:layout}
-.screen.on{opacity:1;pointer-events:auto}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .38s cubic-bezier(.4,0,.2,1),transform .38s cubic-bezier(.4,0,.2,1);transform:scale(.97);-webkit-backface-visibility:hidden;backface-visibility:hidden;contain:layout}
+.screen.on{opacity:1;pointer-events:auto;transform:none}
+@media (prefers-reduced-motion:reduce){.screen{transition:opacity .2s;transform:none}.screen.on{transform:none}}
 #viz{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #top>*{z-index:1}#top>#viz{z-index:0}
 h1{font-weight:200;font-size:clamp(40px,9vw,84px);letter-spacing:.18em;margin:0 0 0 .18em;transition:color .4s,background .4s}
@@ -178,7 +179,7 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
  <div class="link" id="twbtn" style="opacity:.7;font-size:11px;letter-spacing:.18em;margin-top:8px;padding:4px 1.2em;border-bottom:1px solid var(--line)">PRIME TOWER</div>
 <div id="bgmCredit" style="position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 6px);text-align:center;font-size:4px;line-height:1.35;letter-spacing:0;opacity:.16;padding:0 12px;pointer-events:none;word-break:break-all">Antonio Vivaldi — The Four Seasons, “Winter”, I. Allegro non molto<br>Performance: John Harrison (Violin), Robert Turizziani (Conductor), Wichita State University Chamber Players<br>Original recording: Wikimedia Commons<br>License: Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)<br>Changes: Looped and volume-adjusted.<br>Original recording: <a href="https://commons.wikimedia.org/wiki/File:Vivaldi_-_Four_Seasons_4_Winter_mvt_1_Allegro_non_molto_-_John_Harrison_violin.oga" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;pointer-events:auto">https://commons.wikimedia.org/wiki/File:Vivaldi_-_Four_Seasons_4_Winter_mvt_1_Allegro_non_molto_-_John_Harrison_violin.oga</a><br>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;pointer-events:auto">https://creativecommons.org/licenses/by-sa/4.0/</a><br>This game is not affiliated with, endorsed by, or sponsored by the performers or the original recording's rights holders.</div>
 </div>
-<div class="screen" id="tower"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center;padding-top:calc(env(safe-area-inset-top,0px) + 48px)">
+<div class="screen" id="tower" style="justify-content:flex-start"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center;padding-top:calc(env(safe-area-inset-top,0px) + 56px)">
  <div class="lab">CPU 47</div>
  <div class="big" id="twSym" style="letter-spacing:.08em;margin:8px 0 4px">Z1</div>
  <div class="lab" id="twRank" style="margin:0 0 6px;opacity:.7">Prologue</div>
@@ -186,7 +187,7 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
  <div class="link" id="twStart">ENTER</div>
  <div class="link" id="twBack" style="opacity:.5;font-size:10px;margin-top:20px">BACK</div>
 </div></div>
-<div class="screen" id="twmode"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center;padding-top:calc(env(safe-area-inset-top,0px) + 48px)">
+<div class="screen" id="twmode" style="justify-content:flex-start"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center;padding-top:calc(env(safe-area-inset-top,0px) + 56px)">
  <div class="lab">PRIME TOWER</div>
  <div style="display:flex;gap:40px;margin:30px 0 6px">
   <div><div class="link" id="twYou" style="font-size:16px;margin:0">YOU</div><div class="lab" style="margin:0;text-align:center;opacity:.4">NO MISS</div></div>
@@ -195,7 +196,7 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
  <div class="link" id="rktbtn" style="opacity:.7;font-size:11px;letter-spacing:.18em;margin-top:30px;padding:4px 1.2em;border-bottom:1px solid var(--line)">RANK TABLE</div>
  <div class="link" id="twmBack" style="opacity:.5;font-size:10px;margin-top:18px">TOP</div>
 </div></div>
-<div class="screen" id="nmsel"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center;padding-top:calc(env(safe-area-inset-top,0px) + 48px)">
+<div class="screen" id="nmsel" style="justify-content:flex-start"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center;padding-top:calc(env(safe-area-inset-top,0px) + 56px)">
  <div class="lab">NO MISS</div>
  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0 4px">
   <div class="link" id="nmPrev" style="font-size:22px;margin:0;padding:12px 14px">‹</div>
@@ -361,6 +362,8 @@ function swish(dir,v=.03){try{const A=ac(),t=A.currentTime,n=Math.floor(A.sample
  const s=A.createBufferSource();s.buffer=b;const f=A.createBiquadFilter();f.type='bandpass';f.Q.value=1.1;
  f.frequency.setValueAtTime(dir>0?700:2400,t);f.frequency.exponentialRampToValueAtTime(dir>0?2400:700,t+.09);
  const g=A.createGain();g.gain.value=v;s.connect(f);f.connect(g);g.connect(MB);s.start(t)}catch(e){}}
+function uiTap(){try{bell(note(3),.042)}catch(e){}}
+document.addEventListener('pointerdown',e=>{const el=e.target.closest('.link,button,.lv span,#quit,#thm,#snd,#bgmOn,#bgmOff');if(el&&!el.disabled&&!el.closest('#field'))uiTap()},{passive:true});
 // ---------- intro: すだれ算 — 素因数分解を、起動音の和音ごとに1段ずつ ----------
 let introT=[];
 function introStop(){introT.forEach(clearTimeout);introT=[];gameEl.classList.remove('intro')}

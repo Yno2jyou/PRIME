@@ -365,7 +365,7 @@ function swish(dir,v=.03){try{const A=ac(),t=A.currentTime,n=Math.floor(A.sample
  const s=A.createBufferSource();s.buffer=b;const f=A.createBiquadFilter();f.type='bandpass';f.Q.value=1.1;
  f.frequency.setValueAtTime(dir>0?700:2400,t);f.frequency.exponentialRampToValueAtTime(dir>0?2400:700,t+.09);
  const g=A.createGain();g.gain.value=v;s.connect(f);f.connect(g);g.connect(MB);s.start(t)}catch(e){}}
-// UIタップ音: 進む/開く系は高め、戻る/閉じる系は低め、それ以外は中間
+// UIタップ音: 戻る/閉じる系は低め、進む・その他は従来の中間ベル
 const UI_BACK=new Set(['rback','bback','vsBack','rmBack','twBack','twmBack','nmBack','nmrHome','twrHome','home','cy','delNo','quit','rktBack']);
 const UI_FWD=new Set(['start','twStart','nmEnter','nmrNext','twrNext','retry','vsNew','vsJoin','rmPlay','rmStart','rktbtn','twYou','twCpu','authLogin','authReg','nmNext','twbtn','vsbtn','sbtn','rbtn','nmrStage','delYes']);
 function uiTapKind(el){
@@ -379,8 +379,7 @@ function uiTapKind(el){
 }
 function uiTap(kind){
   try{
-    if(kind==='back'){bell(note(0),.036);tone(note(0)*.5,.18,.012,0,'sine')}
-    else if(kind==='fwd'){bell(note(5),.044);tone(note(7),.14,.02,.015,'triangle')}
+    if(kind==='back'){bell(note(0),.048);tone(note(0)*.5,.22,.016,0,'sine');tone(note(0)*.25,.28,.01,.02,'sine')}
     else bell(note(3),.042);
   }catch(e){}
 }

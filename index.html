@@ -150,8 +150,8 @@ h1.logo .wm.title-gold{background:linear-gradient(105deg,#ffb300 0%,#ffd400 28%,
 h1.logo .wm.title-rainbow{background:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd400,#3ddc84,#3b82f6,#8b5cf6,#ff3b3b);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:titleRainbow 3.2s linear infinite}
 @media (prefers-reduced-motion:reduce){h1.logo .wm.title-rainbow{animation:none;background-position:30% 50%}}
 
-#bgSpiral{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-</style></head><body>
+#bgSpiral{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+</style></head><body><canvas id="bgSpiral"></canvas>
 <div class="screen on" id="name" style="gap:40px">
  <div style="font-size:22px;letter-spacing:.34em;font-weight:400;margin-left:.34em">ORIGIN</div>
  <div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%">
@@ -170,7 +170,6 @@ h1.logo .wm.title-rainbow{background:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd4
 <div class="screen" id="delconf"><div style="font-size:13px;letter-spacing:.15em;font-weight:300;text-align:center;padding:0 24px">アカウントを削除しますか？<br><span style="display:block;font-size:10px;opacity:.45;letter-spacing:.12em;margin-top:12px">進捗・スコアは復元できません</span></div>
  <div class="row" style="margin-top:36px"><div class="link" id="delYes" style="color:var(--neg)">削除する</div><div class="link" id="delNo" style="opacity:.5">キャンセル</div></div></div>
 <div class="screen" id="top">
-<canvas id="bgSpiral" style="z-index:0"></canvas>
  <div class="link" id="who" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;margin:0"></div>
  <div class="link" id="topLogout" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;margin-top:30px;font-size:9px;opacity:.35;letter-spacing:.14em;display:none">LOGOUT</div>
  <button id="thm" type="button" aria-label="ライト/ダーク切り替え"><svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></svg><svg class="moon" viewBox="0 0 24 24"><path d="M20.5 13.4A8.6 8.6 0 1 1 10.6 3.5a6.9 6.9 0 0 0 9.9 9.9z"/></svg></button>
@@ -1933,12 +1932,14 @@ refreshWho();applyTitleTheme();
 <script>
 (function(){
   const topScreen = document.getElementById('top');
+  const gameScreen = document.getElementById('game');
+  const loginScreen = document.getElementById('name');
   const cv = document.getElementById('bgSpiral');
   const ctx = cv.getContext('2d');
   let W, H, S;
   function resize(){
     const dpr = window.devicePixelRatio || 1;
-    W = cv.clientWidth; H = cv.clientHeight;
+    W = window.innerWidth; H = window.innerHeight;
     cv.width = W * dpr; cv.height = H * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     S = Math.min(W, H) * 0.42;
@@ -1951,9 +1952,9 @@ refreshWho();applyTitleTheme();
   const V0 = { re: Math.SQRT1_2, im: Math.SQRT1_2 };
   const VERTS = [{re:1,im:0},{re:0,im:1},{re:-1,im:0},{re:0,im:-1}].map(ip => cmul(V0, ip));
 
-  // ---- 縮み率: 7秒で遷移し反対側の端へ往復 / 速度: 往復ごとに0.3ずつ上下 ----
+  // ---- 縮み率: 7秒で遷移し反対側の端へ往復 / 速度: 往復ごとに少しずつ上下(全体的にゆっくり) ----
   const SHRINK_MIN = 0.08, SHRINK_MAX = 0.4, SHRINK_SEC = 7;
-  const SPEED_MIN = 2, SPEED_MAX = 12, SPEED_STEP = 0.3;
+  const SPEED_MIN = 0.5, SPEED_MAX = 3, SPEED_STEP = 0.08;
   let shrink = SHRINK_MIN, shrinkFrom = SHRINK_MIN, shrinkTo = SHRINK_MAX;
   let elapsed = 0, legs = 0, speed = SPEED_MAX, speedDir = -1;
 
@@ -1970,7 +1971,7 @@ refreshWho();applyTitleTheme();
     if (x >= 1) {
       nextLeg();
       legs++;
-      if (legs % 2 === 0) { // 往復が終わるごとに速度を変える
+      if (legs % 2 === 0) {
         speed += speedDir * SPEED_STEP;
         if (speed <= SPEED_MIN) { speed = SPEED_MIN; speedDir = 1; }
         if (speed >= SPEED_MAX) { speed = SPEED_MAX; speedDir = -1; }
@@ -1987,6 +1988,16 @@ refreshWho();applyTitleTheme();
     alpha = Math.atan2(m.im, m.re);
   }
 
+  // ---- 渦の目の位置: トップ画面ではLEVELとSTARTの中間、それ以外は画面中央 ----
+  let cyCur = null;
+  function targetCenterY(){
+    if (!topScreen.classList.contains('on')) return H / 2;
+    const a = document.getElementById('lvT').getBoundingClientRect();
+    const b = document.getElementById('start').getBoundingClientRect();
+    if (!a.height || !b.height) return H / 2;
+    return (a.bottom + b.top) / 2;
+  }
+
   const K_MIN = -60, K_MAX = 60, MAX_SIZE = 2000, MIN_SIZE = 0.5;
   let lastFrame = performance.now();
   let accum = 0;
@@ -1994,12 +2005,20 @@ refreshWho();applyTitleTheme();
   function frame(now){
     const dt = Math.min((now - lastFrame) / 1000, 0.1);
     lastFrame = now;
-    if (!topScreen.classList.contains('on')) { requestAnimationFrame(frame); return; }
+
+    // プレイ画面では背景を出さない
+    // プレイ画面・起動アニメーション(game内のintro)・ログイン画面では出さない
+    const playing = gameScreen.classList.contains('on') || loginScreen.classList.contains('on');
+    cv.style.visibility = playing ? 'hidden' : 'visible';
+    if (playing) { requestAnimationFrame(frame); return; }
 
     stepShrink(dt);
     updateM();
     accum += dt * speed;
     const frac = accum - Math.floor(accum);
+
+    if (cyCur === null) cyCur = H / 2;
+    cyCur += (targetCenterY() - cyCur) * (1 - Math.exp(-dt * 3)); // 目の位置はゆるやかに移動
 
     const dark = document.documentElement.dataset.theme === 'dark';
     ctx.fillStyle = dark ? '#000' : '#fff';
@@ -2007,7 +2026,7 @@ refreshWho();applyTitleTheme();
     ctx.strokeStyle = dark ? '#fff' : '#000';
     ctx.lineWidth = 1;
 
-    const cx = W / 2, cy = H / 2;
+    const cx = W / 2, cy = cyCur;
     for (let k = K_MIN; k <= K_MAX; k++) {
       const e = k - frac;
       const scale = Math.exp(logR * e);

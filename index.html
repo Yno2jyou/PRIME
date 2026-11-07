@@ -151,6 +151,7 @@ h1.logo .wm.title-rainbow{background:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd4
 @media (prefers-reduced-motion:reduce){h1.logo .wm.title-rainbow{animation:none;background-position:30% 50%}}
 
 #bgSpiral{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+#tower,#twmode,#nmsel,#nmres,#twres,#vs,#room,#end,#conf,#delconf{justify-content:flex-start;padding-top:max(env(safe-area-inset-top,0px),10vh)}
 </style></head><body><canvas id="bgSpiral"></canvas>
 <div class="screen on" id="name" style="gap:40px">
  <div style="font-size:22px;letter-spacing:.34em;font-weight:400;margin-left:.34em">ORIGIN</div>
@@ -1991,43 +1992,6 @@ refreshWho();applyTitleTheme();
     alpha = Math.atan2(m.im, m.re);
   }
 
-  // ---- 文字と渦の目が重ならないよう、表示(画面の内容)を上下にずらす ----
-  let shiftY = 0, lastScr = null;
-  function avoidText(dt, eyeY){
-    const scr = document.querySelector('.screen.on');
-    if (scr !== lastScr) { // 画面が切り替わったらずれをリセット
-      if (lastScr) lastScr.style.translate = '';
-      lastScr = scr; shiftY = 0;
-    }
-    if (!scr || scr === topScreen) return;
-
-    let top = Infinity, bot = -Infinity;
-    for (const c of scr.children) {
-      if (c.tagName === 'CANVAS') continue;
-      const r = c.getBoundingClientRect();
-      if (r.height === 0 && r.width === 0) continue;
-      top = Math.min(top, r.top - shiftY);
-      bot = Math.max(bot, r.bottom - shiftY);
-    }
-    if (top === Infinity) return;
-
-    const R = S * 0.22, gap = 16, margin = 12;
-    const eyeTop = eyeY - R, eyeBot = eyeY + R;
-    let target = 0;
-    if (bot >= eyeTop && top <= eyeBot) {
-      const up = (eyeTop - gap) - bot;    // 上へずらす量(負)
-      const down = (eyeBot + gap) - top;  // 下へずらす量(正)
-      const fitsUp = top + up >= margin;
-      const fitsDown = bot + down <= H - margin;
-      if (fitsUp && fitsDown) target = Math.abs(up) <= Math.abs(down) ? up : down;
-      else if (fitsUp) target = up;
-      else if (fitsDown) target = down;
-      else target = Math.abs(up) <= Math.abs(down) ? up : down;
-    }
-    shiftY += (target - shiftY) * (1 - Math.exp(-dt * 6));
-    scr.style.translate = '0 ' + shiftY.toFixed(1) + 'px';
-  }
-
   // ---- 渦の目の位置: トップ画面ではLEVELとSTARTの中間、それ以外は画面中央 ----
   let cyCur = null;
   function targetCenterY(){
@@ -2061,7 +2025,6 @@ refreshWho();applyTitleTheme();
 
     if (cyCur === null) cyCur = H / 2;
     cyCur += (targetCenterY() - cyCur) * (1 - Math.exp(-dt * 3)); // 目の位置はゆるやかに移動
-    avoidText(dt, cyCur);
 
     const dark = document.documentElement.dataset.theme === 'dark';
     ctx.fillStyle = dark ? '#000' : '#fff';

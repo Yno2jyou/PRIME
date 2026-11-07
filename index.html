@@ -151,7 +151,7 @@ h1.logo .wm.title-rainbow{background:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd4
 @media (prefers-reduced-motion:reduce){h1.logo .wm.title-rainbow{animation:none;background-position:30% 50%}}
 
 #bgSpiral{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-#tower,#twmode,#nmsel,#nmres,#twres,#vs,#room,#end,#conf,#delconf{justify-content:flex-start;padding-top:max(env(safe-area-inset-top,0px),10vh)}
+#tower,#twmode,#nmsel,#nmres,#twres,#room,#end,#conf,#delconf{justify-content:flex-start;padding-top:max(env(safe-area-inset-top,0px),10vh)}
 </style></head><body><canvas id="bgSpiral"></canvas>
 <div class="screen on" id="name" style="gap:40px">
  <div style="font-size:22px;letter-spacing:.34em;font-weight:400;margin-left:.34em">ORIGIN</div>
@@ -243,7 +243,7 @@ h1.logo .wm.title-rainbow{background:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd4
  <div class="link" id="rback" style="margin-top:26px;opacity:.5;font-size:10px">TOP</div>
 </div></div>
 <div class="screen" id="vs"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center">
- <h1 class="logo" style="margin-bottom:44px"><span class="wm" aria-label="ORIGIN">ORIGIN</span></h1>
+ <h1 class="logo" style="margin:0 0 52px"><span class="wm" aria-label="ORIGIN">ORIGIN</span></h1>
  <div class="lab" style="margin-bottom:4px">LEVEL</div><div class="lv" id="vsLv" style="margin-bottom:10px"></div>
  <div class="link" id="vsNew">CREATE ROOM</div>
  <div class="lab" style="margin:22px 0 6px;opacity:.3">OR</div>
@@ -1938,6 +1938,10 @@ refreshWho();applyTitleTheme();
   const ruleScreen = document.getElementById('rule');
   const boardScreen = document.getElementById('board');
   const rankScreen = document.getElementById('rankt');
+  const vsScreen = document.getElementById('vs');
+  const vsBd = vsScreen.querySelector('.bd');
+  const vsLogo = vsBd.querySelector('.logo');
+  const titleEl = document.getElementById('titleH1');
   const cv = document.getElementById('bgSpiral');
   const ctx = cv.getContext('2d');
   let W, H, S;
@@ -1995,9 +1999,12 @@ refreshWho();applyTitleTheme();
   // ---- 渦の目の位置: トップ画面ではLEVELとSTARTの中間、それ以外は画面中央 ----
   let cyCur = null;
   function targetCenterY(){
-    if (!topScreen.classList.contains('on')) return H / 2;
-    const a = document.getElementById('lvT').getBoundingClientRect();
-    const b = document.getElementById('start').getBoundingClientRect();
+    let la, lb;
+    if (topScreen.classList.contains('on')) { la = 'lvT'; lb = 'start'; }
+    else if (vsScreen.classList.contains('on')) { la = 'vsLv'; lb = 'vsNew'; }
+    else return H / 2;
+    const a = document.getElementById(la).getBoundingClientRect();
+    const b = document.getElementById(lb).getBoundingClientRect();
     if (!a.height || !b.height) return H / 2;
     return (a.bottom + b.top) / 2;
   }
@@ -2022,6 +2029,13 @@ refreshWho();applyTitleTheme();
     updateM();
     accum += dt * speed;
     const frac = accum - Math.floor(accum);
+
+    // フレンド画面のロゴ位置をトップ画面のロゴと同じ高さに合わせる(固定量の移動のみ)
+    if (vsScreen.classList.contains('on')) {
+      vsBd.style.translate = '0px 0px';
+      const d = titleEl.getBoundingClientRect().top - vsLogo.getBoundingClientRect().top;
+      vsBd.style.translate = '0 ' + d.toFixed(1) + 'px';
+    } else vsBd.style.translate = '';
 
     if (cyCur === null) cyCur = H / 2;
     cyCur += (targetCenterY() - cyCur) * (1 - Math.exp(-dt * 3)); // 目の位置はゆるやかに移動

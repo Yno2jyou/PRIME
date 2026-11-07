@@ -149,6 +149,8 @@ h1.logo .wm.title-red{color:#ff1414}
 h1.logo .wm.title-gold{background:linear-gradient(105deg,#ffb300 0%,#ffd400 28%,#fff060 50%,#ffd400 72%,#ffb300 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
 h1.logo .wm.title-rainbow{background:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd400,#3ddc84,#3b82f6,#8b5cf6,#ff3b3b);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;animation:titleRainbow 3.2s linear infinite}
 @media (prefers-reduced-motion:reduce){h1.logo .wm.title-rainbow{animation:none;background-position:30% 50%}}
+
+#bgSpiral{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
 </style></head><body>
 <div class="screen on" id="name" style="gap:40px">
  <div style="font-size:22px;letter-spacing:.34em;font-weight:400;margin-left:.34em">ORIGIN</div>
@@ -168,6 +170,7 @@ h1.logo .wm.title-rainbow{background:linear-gradient(90deg,#ff3b3b,#ff8c1a,#ffd4
 <div class="screen" id="delconf"><div style="font-size:13px;letter-spacing:.15em;font-weight:300;text-align:center;padding:0 24px">アカウントを削除しますか？<br><span style="display:block;font-size:10px;opacity:.45;letter-spacing:.12em;margin-top:12px">進捗・スコアは復元できません</span></div>
  <div class="row" style="margin-top:36px"><div class="link" id="delYes" style="color:var(--neg)">削除する</div><div class="link" id="delNo" style="opacity:.5">キャンセル</div></div></div>
 <div class="screen" id="top">
+<canvas id="bgSpiral" style="z-index:0"></canvas>
  <div class="link" id="who" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;margin:0"></div>
  <div class="link" id="topLogout" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;margin-top:30px;font-size:9px;opacity:.35;letter-spacing:.14em;display:none">LOGOUT</div>
  <button id="thm" type="button" aria-label="ライト/ダーク切り替え"><svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></svg><svg class="moon" viewBox="0 0 24 24"><path d="M20.5 13.4A8.6 8.6 0 1 1 10.6 3.5a6.9 6.9 0 0 0 9.9 9.9z"/></svg></button>
@@ -1925,5 +1928,117 @@ $('twrHome').onclick=()=>{towerMode=0;state='top';show('top');refreshWho()};
 
 // 初期表示時にベスト反映
 refreshWho();applyTitleTheme();
+</script>
+
+<script>
+(function(){
+  const topScreen = document.getElementById('top');
+  const cv = document.getElementById('bgSpiral');
+  const ctx = cv.getContext('2d');
+  let W, H, S;
+  function resize(){
+    const dpr = window.devicePixelRatio || 1;
+    W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    S = Math.min(W, H) * 0.42;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---- 相似変換(渦の形) ----
+  const cmul = (a, b) => ({ re: a.re*b.re - a.im*b.im, im: a.re*b.im + a.im*b.re });
+  const V0 = { re: Math.SQRT1_2, im: Math.SQRT1_2 };
+  const VERTS = [{re:1,im:0},{re:0,im:1},{re:-1,im:0},{re:0,im:-1}].map(ip => cmul(V0, ip));
+
+  // ---- 縮み率: 7秒で遷移し反対側の端へ往復 / 速度: 往復ごとに0.3ずつ上下 ----
+  const SHRINK_MIN = 0.08, SHRINK_MAX = 0.4, SHRINK_SEC = 7;
+  const SPEED_MIN = 2, SPEED_MAX = 12, SPEED_STEP = 0.3;
+  let shrink = SHRINK_MIN, shrinkFrom = SHRINK_MIN, shrinkTo = SHRINK_MAX;
+  let elapsed = 0, legs = 0, speed = SPEED_MAX, speedDir = -1;
+
+  function nextLeg(){
+    shrinkFrom = shrink;
+    shrinkTo = shrinkFrom < (SHRINK_MIN + SHRINK_MAX) / 2 ? SHRINK_MAX : SHRINK_MIN;
+    elapsed = 0;
+  }
+  function stepShrink(dt){
+    elapsed += dt;
+    const x = Math.min(elapsed / SHRINK_SEC, 1);
+    const eased = x * x * (3 - 2 * x);
+    shrink = shrinkFrom + (shrinkTo - shrinkFrom) * eased;
+    if (x >= 1) {
+      nextLeg();
+      legs++;
+      if (legs % 2 === 0) { // 往復が終わるごとに速度を変える
+        speed += speedDir * SPEED_STEP;
+        if (speed <= SPEED_MIN) { speed = SPEED_MIN; speedDir = 1; }
+        if (speed >= SPEED_MAX) { speed = SPEED_MAX; speedDir = -1; }
+      }
+    }
+  }
+  nextLeg();
+
+  let logR, alpha, m;
+  function updateM(){
+    const t = shrink;
+    m = { re: 1 - t, im: t };
+    logR = Math.log(Math.hypot(m.re, m.im));
+    alpha = Math.atan2(m.im, m.re);
+  }
+
+  const K_MIN = -60, K_MAX = 60, MAX_SIZE = 2000, MIN_SIZE = 0.5;
+  let lastFrame = performance.now();
+  let accum = 0;
+
+  function frame(now){
+    const dt = Math.min((now - lastFrame) / 1000, 0.1);
+    lastFrame = now;
+    if (!topScreen.classList.contains('on')) { requestAnimationFrame(frame); return; }
+
+    stepShrink(dt);
+    updateM();
+    accum += dt * speed;
+    const frac = accum - Math.floor(accum);
+
+    const dark = document.documentElement.dataset.theme === 'dark';
+    ctx.fillStyle = dark ? '#000' : '#fff';
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = dark ? '#fff' : '#000';
+    ctx.lineWidth = 1;
+
+    const cx = W / 2, cy = H / 2;
+    for (let k = K_MIN; k <= K_MAX; k++) {
+      const e = k - frac;
+      const scale = Math.exp(logR * e);
+      const mag = scale * S;
+      if (mag > MAX_SIZE || mag < MIN_SIZE) continue;
+
+      let a = 1;
+      const lmag = Math.log10(mag);
+      if (lmag < 0.5) a *= Math.max(0, (lmag + 0.3) / 0.8);
+      if (lmag > 2.6) a *= Math.max(0, 1 - (lmag - 2.6) / 0.6);
+      if (a <= 0) continue;
+      ctx.globalAlpha = a * 0.3; // 文字が読めるよう薄く描画
+
+      const ang = alpha * e;
+      const w = { re: scale * Math.cos(ang), im: scale * Math.sin(ang) };
+      const P = VERTS.map(v => cmul(w, v));
+      const Q = VERTS.map(v => cmul(w, cmul(m, v)));
+      const px = p => cx + S * p.re, py = p => cy + S * p.im;
+
+      ctx.beginPath();
+      for (let i = 0; i < 4; i++) {
+        const j = (i + 1) % 4;
+        ctx.moveTo(px(P[i]), py(P[i])); ctx.lineTo(px(P[j]), py(P[j]));
+        ctx.moveTo(px(P[i]), py(P[i])); ctx.lineTo(px(Q[i]), py(Q[i]));
+      }
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
 </script>
 </body></html>

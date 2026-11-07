@@ -12,7 +12,7 @@ try{if(localStorage.getItem("prime_token")&&sessionStorage.getItem("prime_sess")
 <link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
-<title>PRIME</title>
+<title>ORIGIN</title>
 <style>
 :root{--bg:#fff;--fg:#000;--line:rgba(0,0,0,.2);--neg:#c0392b;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 :root[data-theme="dark"]{--bg:#000;--fg:#fff;--line:rgba(255,255,255,.28);--neg:#ff6b5b;color-scheme:dark}
@@ -139,9 +139,12 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
 .rk-note{font-size:10px;line-height:1.9;letter-spacing:.1em;opacity:.55;text-align:center;margin:6px 0 4px}
 .rk-ul{display:inline-block;padding-bottom:3px;background-repeat:no-repeat;background-position:0 100%;background-size:100% 2px}
 
+h1.logo svg{display:block;width:min(72vw,440px);height:auto;overflow:visible;margin:0 auto}
+h1.logo{margin-left:0!important;letter-spacing:0}
+h1.title-gold.logo svg,h1.title-rainbow.logo svg{color:#ffc400}
 </style></head><body>
 <div class="screen on" id="name" style="gap:40px">
- <div style="font-size:22px;letter-spacing:.34em;font-weight:400;margin-left:.34em">PRIME</div>
+ <div style="font-size:22px;letter-spacing:.34em;font-weight:400;margin-left:.34em">ORIGIN</div>
  <div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%">
   <input id="nm" maxlength="16" autocomplete="username" autocapitalize="off" spellcheck="false" enterkeyhint="next" placeholder="ID">
   <input id="pw" type="password" maxlength="32" autocomplete="current-password" spellcheck="false" enterkeyhint="go" placeholder="PASSWORD">
@@ -161,7 +164,7 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
  <div class="link" id="who" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;margin:0"></div>
  <div class="link" id="topLogout" style="position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:14px;margin-top:30px;font-size:9px;opacity:.35;letter-spacing:.14em;display:none">LOGOUT</div>
  <button id="thm" type="button" aria-label="ライト/ダーク切り替え"><svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.8"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></svg><svg class="moon" viewBox="0 0 24 24"><path d="M20.5 13.4A8.6 8.6 0 1 1 10.6 3.5a6.9 6.9 0 0 0 9.9 9.9z"/></svg></button>
- <h1 id="titleH1">PRIME</h1><div class="sub" style="margin:12px 0 28px .3em">47 SECONDS</div>
+ <h1 id="titleH1" class="logo"><svg viewBox="0 0 1640 370" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ORIGIN" fill="none" stroke="currentColor" stroke-width="12" stroke-linejoin="miter"><circle cx="178" cy="183" r="168"/><path d="M434 350V15H540C600 15 650 52 650 108C650 162 600 192 515 192H434"/><path d="M515 192L650 350"/><path d="M752 15V350"/><path d="M1140 68A168 168 0 1 0 1020 351H1137V192H1008"/><path d="M1255 15V350"/><path d="M1375 350V15L1630 350V15"/></svg></h1><div class="sub" style="margin:12px 0 28px .3em">47 SECONDS</div>
  <div class="lab" style="margin:0 0 4px .3em">LEVEL</div><div class="lv" id="lvT" style="margin-bottom:28px"></div>
  <div class="link" id="start">START</div>
  <div class="link" id="rbtn" style="opacity:.5;font-size:10px;margin-top:8px">RULE</div>
@@ -230,7 +233,7 @@ html.has-token #name{opacity:0;transition:none;pointer-events:none}
  <div class="link" id="rback" style="margin-top:26px;opacity:.5;font-size:10px">TOP</div>
 </div></div>
 <div class="screen" id="vs"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center">
- <h1 style="margin-bottom:44px">PRIME</h1>
+ <h1 class="logo" style="margin-bottom:44px"><svg viewBox="0 0 1640 370" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ORIGIN" fill="none" stroke="currentColor" stroke-width="12" stroke-linejoin="miter"><circle cx="178" cy="183" r="168"/><path d="M434 350V15H540C600 15 650 52 650 108C650 162 600 192 515 192H434"/><path d="M515 192L650 350"/><path d="M752 15V350"/><path d="M1140 68A168 168 0 1 0 1020 351H1137V192H1008"/><path d="M1255 15V350"/><path d="M1375 350V15L1630 350V15"/></svg></h1>
  <div class="lab" style="margin-bottom:4px">LEVEL</div><div class="lv" id="vsLv" style="margin-bottom:10px"></div>
  <div class="link" id="vsNew">CREATE ROOM</div>
  <div class="lab" style="margin:22px 0 6px;opacity:.3">OR</div>
@@ -1546,8 +1549,8 @@ $('rmStart').onclick=async()=>{
  catch(e){rmBusy=0;rmMsg('OFFLINE'+(e&&e.code?' · '+e.code:''))}
 };
 $('rmShare').onclick=async()=>{
- if(!RM)return;const u=/^https?:/.test(location.protocol)?location.origin+location.pathname+'?room='+RM.code:RM.code,t='PRIME  ROOM '+RM.code;
- try{if(navigator.share){await navigator.share({title:'PRIME',text:t,url:u})}else{await navigator.clipboard.writeText(t+'\n'+u);rmMsg('COPIED')}}catch(e){}
+ if(!RM)return;const u=/^https?:/.test(location.protocol)?location.origin+location.pathname+'?room='+RM.code:RM.code,t='ORIGIN  ROOM '+RM.code;
+ try{if(navigator.share){await navigator.share({title:'ORIGIN',text:t,url:u})}else{await navigator.clipboard.writeText(t+'\n'+u);rmMsg('COPIED')}}catch(e){}
 };
 $('rmBack').onclick=()=>{state='top';show('top')};
 $('start').onclick=()=>begin();$('retry').onclick=()=>roomCtx?backToRoom():begin();$('home').onclick=()=>{state='top';show('top')};

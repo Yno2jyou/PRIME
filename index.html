@@ -1934,6 +1934,9 @@ refreshWho();applyTitleTheme();
   const topScreen = document.getElementById('top');
   const gameScreen = document.getElementById('game');
   const loginScreen = document.getElementById('name');
+  const ruleScreen = document.getElementById('rule');
+  const boardScreen = document.getElementById('board');
+  const rankScreen = document.getElementById('rankt');
   const cv = document.getElementById('bgSpiral');
   const ctx = cv.getContext('2d');
   let W, H, S;
@@ -1988,6 +1991,43 @@ refreshWho();applyTitleTheme();
     alpha = Math.atan2(m.im, m.re);
   }
 
+  // ---- 文字と渦の目が重ならないよう、表示(画面の内容)を上下にずらす ----
+  let shiftY = 0, lastScr = null;
+  function avoidText(dt, eyeY){
+    const scr = document.querySelector('.screen.on');
+    if (scr !== lastScr) { // 画面が切り替わったらずれをリセット
+      if (lastScr) lastScr.style.translate = '';
+      lastScr = scr; shiftY = 0;
+    }
+    if (!scr || scr === topScreen) return;
+
+    let top = Infinity, bot = -Infinity;
+    for (const c of scr.children) {
+      if (c.tagName === 'CANVAS') continue;
+      const r = c.getBoundingClientRect();
+      if (r.height === 0 && r.width === 0) continue;
+      top = Math.min(top, r.top - shiftY);
+      bot = Math.max(bot, r.bottom - shiftY);
+    }
+    if (top === Infinity) return;
+
+    const R = S * 0.22, gap = 16, margin = 12;
+    const eyeTop = eyeY - R, eyeBot = eyeY + R;
+    let target = 0;
+    if (bot >= eyeTop && top <= eyeBot) {
+      const up = (eyeTop - gap) - bot;    // 上へずらす量(負)
+      const down = (eyeBot + gap) - top;  // 下へずらす量(正)
+      const fitsUp = top + up >= margin;
+      const fitsDown = bot + down <= H - margin;
+      if (fitsUp && fitsDown) target = Math.abs(up) <= Math.abs(down) ? up : down;
+      else if (fitsUp) target = up;
+      else if (fitsDown) target = down;
+      else target = Math.abs(up) <= Math.abs(down) ? up : down;
+    }
+    shiftY += (target - shiftY) * (1 - Math.exp(-dt * 6));
+    scr.style.translate = '0 ' + shiftY.toFixed(1) + 'px';
+  }
+
   // ---- 渦の目の位置: トップ画面ではLEVELとSTARTの中間、それ以外は画面中央 ----
   let cyCur = null;
   function targetCenterY(){
@@ -2008,7 +2048,9 @@ refreshWho();applyTitleTheme();
 
     // プレイ画面では背景を出さない
     // プレイ画面・起動アニメーション(game内のintro)・ログイン画面では出さない
-    const playing = gameScreen.classList.contains('on') || loginScreen.classList.contains('on');
+    const playing = gameScreen.classList.contains('on') || loginScreen.classList.contains('on')
+      || ruleScreen.classList.contains('on') || boardScreen.classList.contains('on')
+      || rankScreen.classList.contains('on');
     cv.style.visibility = playing ? 'hidden' : 'visible';
     if (playing) { requestAnimationFrame(frame); return; }
 
@@ -2019,6 +2061,7 @@ refreshWho();applyTitleTheme();
 
     if (cyCur === null) cyCur = H / 2;
     cyCur += (targetCenterY() - cyCur) * (1 - Math.exp(-dt * 3)); // 目の位置はゆるやかに移動
+    avoidText(dt, cyCur);
 
     const dark = document.documentElement.dataset.theme === 'dark';
     ctx.fillStyle = dark ? '#000' : '#fff';

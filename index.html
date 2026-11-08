@@ -256,7 +256,7 @@ html.sa #top>h1.logo{margin-top:115px!important}
 <div class="screen" id="room"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center">
  <div class="lab">ROOM</div><div class="big" id="rmCode" style="letter-spacing:.12em;margin-left:.12em">----</div>
  <div class="lab" id="rmLv" style="margin:12px 0 22px">&nbsp;</div>
- <div id="rmLvSel" style="display:none;flex-direction:column;align-items:center;margin:-10px 0 22px"><div class="lab" style="margin:0 0 4px .3em">LEVEL</div><div class="lv" id="rmLvPick"></div></div>
+ <div id="rmLvSel" style="display:none;flex-direction:column;align-items:center;margin:12px 0 22px"><div class="lab" style="margin:0 0 4px .3em">LEVEL</div><div class="lv" id="rmLvPick"></div></div>
  <div class="link" id="rmStart" style="display:none">START</div>
  <div class="link" id="rmPlay">PLAY</div>
  <div class="link" id="rmShare" style="opacity:.5;font-size:10px">SHARE</div>
@@ -1477,6 +1477,7 @@ async function loadRoom(){
   r0.level=d.level;r0.at=at;$('rmLv').textContent='LEVEL '+d.level;
   // ホストのみ難易度を変更可能(ラウンド進行中は変更不可)
   $('rmLvSel').style.display=d.host?'flex':'none';
+  $('rmLv').style.display=d.host?'none':'';
   if(d.host){const pk=$('rmLvPick'),key=d.level+'|'+(d.inRound?1:0);if(pk.dataset.k!==key){pk.dataset.k=key;mkLv(pk,()=>d.level,l=>setRoomLevel(l));pk.style.pointerEvents=d.inRound?'none':'';pk.style.opacity=d.inRound?'.3':''}}
   $('rmRes').textContent='RESULTS  '+d.list.length+' / '+d.joined;
   await Promise.race([fetchRanks(),new Promise(r=>setTimeout(r,800))]);if(RM!==r0||state!=='room')return;ensureMyRankSynced();

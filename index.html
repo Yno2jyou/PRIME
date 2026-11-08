@@ -308,7 +308,7 @@ html.sa #top>h1.logo{margin-top:115px!important}
  <div class="lab">WORLD TOP 100</div><div id="world" class="fold"></div>
  <div class="link" id="wmore" style="display:none;margin:8px 0 0 -16px;opacity:.5;font-size:10px"></div>
  <div class="link" id="bback" style="margin:40px 0 0 -16px;opacity:.5;font-size:10px">TOP</div></div></div>
-<div class="screen" id="end" style="justify-content:flex-start;overflow-y:auto"><div style="margin:auto;display:flex;flex-direction:column;align-items:center;padding:36px 24px;width:100%">
+<div class="screen" id="end" style="justify-content:flex-start;overflow-y:auto"><div id="rkCd" style="display:none;position:absolute;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);text-align:right;pointer-events:none;opacity:.55"><div style="font-size:9px;letter-spacing:.28em;margin-bottom:4px">NEXT ROUND</div><div id="rkCdN" style="font-size:44px;font-weight:200;line-height:1"></div></div><div style="margin:auto;display:flex;flex-direction:column;align-items:center;padding:36px 24px;width:100%">
  <div class="lab" id="rl">LEVEL 1</div><div class="big" id="rs">0</div>
  <div id="stats" style="width:100%;max-width:300px;margin-top:36px"></div>
  <div class="row" style="margin-top:36px"><div class="link" id="retry">RETRY</div><div class="link" id="home" style="opacity:.5">TOP</div></div></div></div>
@@ -677,7 +677,7 @@ function finish(){
   return;
  }
  submit();
- setTimeout(()=>{cd.textContent='';cd.style.cssText='';$('rs').textContent=score;showStats();state='end';show('end');revealEnd();if(score>0)scorefan(SCTHEME,st.mi===0)},1500);
+ setTimeout(()=>{cd.textContent='';cd.style.cssText='';$('rs').textContent=score;showStats();state='end';show('end');revealEnd();rkEndUI();if(score>0)scorefan(SCTHEME,st.mi===0)},1500);
 }
 // ---------- result: 上から順に表示(効果音「明けの鐘」の約4秒に合わせる) ----------
 let revT=[];
@@ -694,7 +694,7 @@ $('end').addEventListener('click',skipReveal);
 function showStats(){
  const h=st.sp+st.pr,acc=h+st.mi?Math.round(h/(h+st.mi)*100):0;
  const L=[['PRIME COMPLETE',done],['MAX COMBO',st.mc],['BEST NUMBER',st.bn],['SPLITS',st.sp],['PRIMES',st.pr],['MISSES',st.mi],...(st.nb>0?[['NO MISS BONUS ×1.5','+'+st.nb]]:[]),['PENALTY',st.pn?'−'+st.pn:'0'],['ACCURACY',acc+'%'],[roomCtx?(roomCtx.rk?'ROUND SCORE':'ROOM RANK'):'WORLD RANK',rankP?'…':'—']];
- $('rl').textContent=(roomCtx?(roomCtx.rk?'RANKED  ':'ROOM '+roomCtx.code+'  '):'')+'LEVEL '+LV+'  SCORE';$('retry').textContent=roomCtx?(roomCtx.rk?'MATCH':'ROOM'):'RETRY';const el=$('stats');el.textContent='';
+ $('rl').textContent=(roomCtx?(roomCtx.rk?'RANKED  ':'ROOM '+roomCtx.code+'  '):'')+'LEVEL '+LV+'  SCORE';$('retry').textContent=roomCtx?(roomCtx.rk?'FINAL RESULT':'ROOM'):'RETRY';$('end').querySelector('.row').style.display=(roomCtx&&roomCtx.rk)?'none':'';const el=$('stats');el.textContent='';
  L.forEach(([k,v])=>{const r=document.createElement('div');r.className='r';const a=document.createElement('em');a.style.width='auto';a.style.flex='1';a.textContent=k;const b=document.createElement('b');b.style.fontSize='15px';b.textContent=v;r.append(a,b);el.appendChild(r)});
  const wr=el.lastChild.querySelector('b');rankEl=roomCtx?wr:null;
  if(rankP){if(roomCtx&&roomCtx.rk)rankP.then(x=>{wr.textContent=x.score}).catch(()=>{wr.textContent='—'});else if(roomCtx)rankP.then(()=>roomPoll()).catch(()=>{wr.textContent='—'});else rankP.then(x=>{wr.textContent=x&&x.rank?'#'+x.rank+(x.total?' / '+x.total:''):'—'}).catch(()=>{wr.textContent='—'})}
@@ -1754,8 +1754,8 @@ function rkOnState(s){
  if(s.final){
   clearInterval(rkBeatTimer);rkBeatTimer=0;
   if(roomCtx&&roomCtx.rk){
-   if(['starting','count','play','pause','over'].includes(state))rkAbortRound();
-   else if(state==='end')setTimeout(()=>{if(state==='end'&&roomCtx&&roomCtx.rk){roomCtx=null;rkShowMatch()}},1800);
+   if(['starting','count','play','pause'].includes(state))rkAbortRound();
+   else if(state==='end')rkEndUI();
   }
   return;
  }
@@ -1766,6 +1766,16 @@ function rkOnState(s){
   else rkMsg('ROUND MISSED');
  }
 }
+// ラウンド結果画面: 試合が確定したら FINAL RESULT ボタンを出す / 次ラウンドまでのクールダウンを右下に表示
+function rkEndUI(){
+ if(state!=='end'||!(roomCtx&&roomCtx.rk))return;
+ $('end').querySelector('.row').style.display=(rkS&&rkS.final)?'':'none';
+}
+setInterval(()=>{
+ const e=$('rkCd');let n=0;
+ if(state==='end'&&roomCtx&&roomCtx.rk&&rkS&&!rkS.final&&rkS.cur!==null&&rkS.cur>roomCtx.rk.round)n=Math.ceil((rkS.startAt-rkS.off-Date.now())/1000);
+ if(n>0){e.style.display='';$('rkCdN').textContent=n}else e.style.display='none';
+},200);
 function rkScoreTxt(v){return v===null?'—':v<0?'DNF':String(v)}
 function rkStatusText(s){
  if(s.final){

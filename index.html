@@ -1526,7 +1526,7 @@ async function loadRoom(){
 }
 // ===== 自動アップデート: サーバーのVERが自分より新しければ、安全な画面で自動リロード =====
 // worker.js の VER と同じ値にしておく(デプロイのたびに両方を上げる)
-const VER='2026-11-08.5';
+const VER='2026-11-08.6';
 let newVer='';
 function checkVer(v){if(typeof v==='string'&&v>VER)newVer=v}
 function safeToReload(){return['top','room','end','board','vs','rule','name','intro','tower','twres','delconf','twmode','nmsel','nmres'].includes(state)}
@@ -1634,9 +1634,10 @@ async function rkLoadMe(){
  try{const r=await call('rk/me',{token:rkTok()});rkInfo={grade:r.grade,pts:r.pts,streak:r.streak};rkRenderHead();return true}
  catch(e){rkMsg(e&&e.code===401?'LOGIN REQUIRED':'OFFLINE');return false}
 }
+function rkResetLobbyUI(){if(rkQ)return;$('rkFind').style.display='';$('rkCancel').style.display='none'}
 function rkOpenLobby(){
  state='rk';show('rk');rkMsg('');
- if(!rkGameId){$('rkLobby').style.display='';$('rkMatchPanel').style.display='none'}
+ if(!rkGameId){$('rkLobby').style.display='';$('rkMatchPanel').style.display='none';rkResetLobbyUI()}
  rkRenderHead();rkLoadMe();
 }
 // ---- マッチング: 対戦相手はサーバーだけが決める(クライアントが相手を指定・持ち込みできない) ----
@@ -1650,6 +1651,7 @@ function rkStopSearch(notify){
  if(notify!==false)call('rk/dequeue',{token:rkTok()}).catch(()=>{});
 }
 async function rkFind(){
+ if(rkGameId&&rkS&&rkS.final)await rkLeave();
  if(rkQ||rkGameId)return;
  if(!(await rkLoadMe()))return;
  if(rkQ||rkGameId)return;
@@ -1661,7 +1663,7 @@ async function rkFind(){
    const r=await call('rk/queue',{token:rkTok()});
    if(q.canceled||rkQ!==q)return;
    if(r.game){rkQ=null;$('rkCancel').style.display='none';rkMsg('対戦相手が見つかりました！');rkGameId=r.game;rkEnterMatch();return}
-   rkMsg('対戦相手を探しています…');
+   rkMsg('対戦相手を探しています…'+(r.waiting?'  (待機中 '+r.waiting+'人)':''));
   }catch(e){
    if(q.canceled||rkQ!==q)return;
    if(e&&e.code===401){rkMsg('LOGIN REQUIRED');rkStopSearch(false);return}
@@ -1832,7 +1834,7 @@ async function rkLeave(){
  rkGameId='';rkS=null;rkConn=null;rkPeer=null;rkLaunched=-1;rkPending=null;
  if(roomCtx&&roomCtx.rk)roomCtx=null;
  rkHud(false);
- $('rkLobby').style.display='';$('rkMatchPanel').style.display='none';
+ $('rkLobby').style.display='';$('rkMatchPanel').style.display='none';rkResetLobbyUI();
  if(id&&!final){try{await call('rk/forfeit',{token:rkTok(),game:id})}catch(e){}}
  try{conn&&conn.close()}catch(e){}try{peer&&peer.destroy()}catch(e){}
 }

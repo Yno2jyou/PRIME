@@ -269,9 +269,10 @@ html.sa #top>h1.logo{margin-top:115px!important}
 <div class="screen" id="rk"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center">
  <style>.rk-euclid{color:#8c8f94}.rk-fermat{color:#b87333}.rk-euler{color:#c0c6cf}.rklogo{object-fit:contain}:root[data-theme="dark"] .rklogo{filter:invert(1)}</style>
  <div class="lab">RANKED BATTLE</div>
- <div style="height:104px;display:flex;align-items:center;justify-content:center;margin:6px 0 8px">
+ <div style="height:104px;display:flex;align-items:center;justify-content:center;gap:28px;margin:6px 0 8px">
   <img id="rkLogo" class="rklogo" width="96" height="96" alt="" decoding="async" referrerpolicy="no-referrer" style="display:none">
   <span id="rkLogoFb" style="display:none;font-size:72px;font-weight:300;line-height:1"></span>
+  <div class="big" id="rkRankWL" style="display:none;font-size:clamp(36px,11vw,72px)"></div>
  </div>
  <div class="big" id="rkRank" style="font-size:clamp(20px,6vw,30px)">EUCLID</div>
  <div class="lab" id="rkPts" style="margin:10px 0 26px">0 / 500 pt</div>
@@ -281,7 +282,6 @@ html.sa #top>h1.logo{margin-top:115px!important}
  </div>
  <div class="rmsg" id="rkMsg"></div>
  <div id="rkMatchPanel" style="display:none;width:100%;margin-top:6px;align-items:center;flex-direction:column">
-  <div class="big" id="rkFinalWL" style="display:none;margin:0 0 16px"></div>
   <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
    <div class="lab" id="rkOpp" style="margin:0"></div>
   </div>
@@ -1526,7 +1526,7 @@ async function loadRoom(){
 }
 // ===== 自動アップデート: サーバーのVERが自分より新しければ、安全な画面で自動リロード =====
 // worker.js の VER と同じ値にしておく(デプロイのたびに両方を上げる)
-const VER='2026-11-08.6';
+const VER='2026-11-08.7';
 let newVer='';
 function checkVer(v){if(typeof v==='string'&&v>VER)newVer=v}
 function safeToReload(){return['top','room','end','board','vs','rule','name','intro','tower','twres','delconf','twmode','nmsel','nmres'].includes(state)}
@@ -1634,7 +1634,7 @@ async function rkLoadMe(){
  try{const r=await call('rk/me',{token:rkTok()});rkInfo={grade:r.grade,pts:r.pts,streak:r.streak};rkRenderHead();return true}
  catch(e){rkMsg(e&&e.code===401?'LOGIN REQUIRED':'OFFLINE');return false}
 }
-function rkResetLobbyUI(){if(rkQ)return;$('rkFind').style.display='';$('rkCancel').style.display='none'}
+function rkResetLobbyUI(){$('rkRankWL').style.display='none';if(rkQ)return;$('rkFind').style.display='';$('rkCancel').style.display='none'}
 function rkOpenLobby(){
  state='rk';show('rk');rkMsg('');
  if(!rkGameId){$('rkLobby').style.display='';$('rkMatchPanel').style.display='none';rkResetLobbyUI()}
@@ -1713,7 +1713,7 @@ function rkShowMatch(){
  if(rkS)rkRenderMatch(rkS);
 }
 function rkEnterMatch(){
- rkLaunched=-1;rkS=null;rkStartGrade=rkInfo.grade;rkMsg('');$('rkFinalWL').style.display='none';
+ rkLaunched=-1;rkS=null;rkStartGrade=rkInfo.grade;rkMsg('');$('rkRankWL').style.display='none';
  $('rkRounds').textContent='';$('rkWins').textContent='';$('rkResult').textContent='';$('rkOpp').textContent='';$('rkAgain').style.display='none';
  rkShowMatch();
  rkBeat(false);rkLoop();
@@ -1765,8 +1765,8 @@ function rkOnState(s){
   const at=s.startAt-s.off; // 開始時刻(この端末の時計)
   if(Date.now()<at+8000){
    const gid=rkGameId,go=()=>begin({code:'RANKED',level:s.levels[s.cur],id:'rk',seed:s.seed,at,rk:{game:gid,round:s.cur}});
-   const w=state==='end'?at-Date.now():0;   // ラウンド結果画面では、カウントダウンが0になるまで画面を切り替えない
-   if(w>0)setTimeout(()=>{if(rkGameId===gid&&state==='end'&&roomCtx&&roomCtx.rk)go()},w);else go();
+   const w=at-Date.now();   // 対戦前の画面・ラウンド結果画面は、開始時刻(カウントダウン0)になるまで切り替えない
+   if(w>0)setTimeout(()=>{if(rkGameId===gid&&(state==='rk'||(state==='end'&&roomCtx&&roomCtx.rk)))go()},w);else go();
   }
   else rkMsg('ROUND MISSED');
  }
@@ -1799,7 +1799,7 @@ function rkStatusText(s){
 }
 function rkRenderMatch(s){
  rkRenderHead();
- {const fe=$('rkFinalWL');
+ {const fe=$('rkRankWL');
   if(s.final){const m={win:['WIN','#ff2e2e'],lose:['LOST','#1a8cff'],draw:['DRAW','#8c8f94']}[s.final];fe.textContent=m[0];fe.style.color=m[1];fe.style.display=''}
   else fe.style.display='none'}
  $('rkOpp').textContent='VS  '+s.opp.name+'  ·  '+RK_NAMES[s.opp.grade];

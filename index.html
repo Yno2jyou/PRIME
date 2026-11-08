@@ -281,8 +281,8 @@ html.sa #top>h1.logo{margin-top:115px!important}
  </div>
  <div class="rmsg" id="rkMsg"></div>
  <div id="rkMatchPanel" style="display:none;width:100%;margin-top:6px;align-items:center;flex-direction:column">
+  <div class="big" id="rkFinalWL" style="display:none;margin:0 0 16px"></div>
   <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
-   <img id="rkOppImg" class="rklogo" width="26" height="26" alt="" decoding="async" referrerpolicy="no-referrer" style="display:none"><span id="rkOppFb" style="display:none;font-size:20px;line-height:1"></span>
    <div class="lab" id="rkOpp" style="margin:0"></div>
   </div>
   <div class="lab" id="rkWins"></div>
@@ -309,7 +309,7 @@ html.sa #top>h1.logo{margin-top:115px!important}
  <div class="link" id="wmore" style="display:none;margin:8px 0 0 -16px;opacity:.5;font-size:10px"></div>
  <div class="link" id="bback" style="margin:40px 0 0 -16px;opacity:.5;font-size:10px">TOP</div></div></div>
 <div class="screen" id="end" style="justify-content:flex-start;overflow-y:auto"><div id="rkCd" style="display:none;position:absolute;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);text-align:right;pointer-events:none;opacity:.55"><div style="font-size:9px;letter-spacing:.28em;margin-bottom:4px">NEXT ROUND</div><div id="rkCdN" style="font-size:44px;font-weight:200;line-height:1"></div></div><div style="margin:auto;display:flex;flex-direction:column;align-items:center;padding:36px 24px;width:100%">
- <div class="lab" id="rl">LEVEL 1</div><div class="big" id="rs">0</div>
+ <div class="lab" id="rl">LEVEL 1</div><div class="big" id="rkWL" style="display:none;margin:6px 0 2px;min-height:1em"></div><div class="big" id="rs">0</div>
  <div id="stats" style="width:100%;max-width:300px;margin-top:36px"></div>
  <div class="row" style="margin-top:36px"><div class="link" id="retry">RETRY</div><div class="link" id="home" style="opacity:.5">TOP</div></div></div></div>
 <script>
@@ -694,7 +694,7 @@ $('end').addEventListener('click',skipReveal);
 function showStats(){
  const h=st.sp+st.pr,acc=h+st.mi?Math.round(h/(h+st.mi)*100):0;
  const L=[['PRIME COMPLETE',done],['MAX COMBO',st.mc],['BEST NUMBER',st.bn],['SPLITS',st.sp],['PRIMES',st.pr],['MISSES',st.mi],...(st.nb>0?[['NO MISS BONUS ×1.5','+'+st.nb]]:[]),['PENALTY',st.pn?'−'+st.pn:'0'],['ACCURACY',acc+'%'],[roomCtx?(roomCtx.rk?'ROUND SCORE':'ROOM RANK'):'WORLD RANK',rankP?'…':'—']];
- $('rl').textContent=(roomCtx?(roomCtx.rk?'RANKED  ':'ROOM '+roomCtx.code+'  '):'')+'LEVEL '+LV+'  SCORE';$('retry').textContent=roomCtx?(roomCtx.rk?'FINAL RESULT':'ROOM'):'RETRY';$('end').querySelector('.row').style.display=(roomCtx&&roomCtx.rk)?'none':'';const el=$('stats');el.textContent='';
+ $('rl').textContent=(roomCtx?(roomCtx.rk?'RANKED  ':'ROOM '+roomCtx.code+'  '):'')+'LEVEL '+LV+'  SCORE';$('retry').textContent=roomCtx?(roomCtx.rk?'FINAL RESULT':'ROOM'):'RETRY';$('end').querySelector('.row').style.display=(roomCtx&&roomCtx.rk)?'none':'';$('home').style.display=(roomCtx&&roomCtx.rk)?'none':'';$('rkWL').style.display=(roomCtx&&roomCtx.rk)?'':'none';const el=$('stats');el.textContent='';
  L.forEach(([k,v])=>{const r=document.createElement('div');r.className='r';const a=document.createElement('em');a.style.width='auto';a.style.flex='1';a.textContent=k;const b=document.createElement('b');b.style.fontSize='15px';b.textContent=v;r.append(a,b);el.appendChild(r)});
  const wr=el.lastChild.querySelector('b');rankEl=roomCtx?wr:null;
  if(rankP){if(roomCtx&&roomCtx.rk)rankP.then(x=>{wr.textContent=x.score}).catch(()=>{wr.textContent='—'});else if(roomCtx)rankP.then(()=>roomPoll()).catch(()=>{wr.textContent='—'});else rankP.then(x=>{wr.textContent=x&&x.rank?'#'+x.rank+(x.total?' / '+x.total:''):'—'}).catch(()=>{wr.textContent='—'})}
@@ -1713,7 +1713,7 @@ function rkShowMatch(){
  if(rkS)rkRenderMatch(rkS);
 }
 function rkEnterMatch(){
- rkLaunched=-1;rkS=null;rkStartGrade=rkInfo.grade;rkMsg('');
+ rkLaunched=-1;rkS=null;rkStartGrade=rkInfo.grade;rkMsg('');$('rkFinalWL').style.display='none';
  $('rkRounds').textContent='';$('rkWins').textContent='';$('rkResult').textContent='';$('rkOpp').textContent='';$('rkAgain').style.display='none';
  rkShowMatch();
  rkBeat(false);rkLoop();
@@ -1751,6 +1751,7 @@ function rkOnState(s){
  // P2Pが切れているときは、サーバー中継の相手スコア(表示専用)をHUDに反映
  if(s.live&&roomCtx&&roomCtx.rk&&s.live.r===roomCtx.rk.round&&!(rkConn&&rkConn.open)&&['starting','count','play'].includes(state))$('cpuSc').textContent=s.live.s;
  if(state==='rk')rkRenderMatch(s);
+ else if(state==='end')rkEndUI();
  if(s.final){
   clearInterval(rkBeatTimer);rkBeatTimer=0;
   if(roomCtx&&roomCtx.rk){
@@ -1762,7 +1763,11 @@ function rkOnState(s){
  if(s.cur!==null&&!s.played&&s.seed!==null&&rkLaunched!==s.cur&&(state==='rk'||(state==='end'&&roomCtx&&roomCtx.rk))){
   rkLaunched=s.cur;
   const at=s.startAt-s.off; // 開始時刻(この端末の時計)
-  if(Date.now()<at+8000)begin({code:'RANKED',level:s.levels[s.cur],id:'rk',seed:s.seed,at,rk:{game:rkGameId,round:s.cur}});
+  if(Date.now()<at+8000){
+   const gid=rkGameId,go=()=>begin({code:'RANKED',level:s.levels[s.cur],id:'rk',seed:s.seed,at,rk:{game:gid,round:s.cur}});
+   const w=state==='end'?at-Date.now():0;   // ラウンド結果画面では、カウントダウンが0になるまで画面を切り替えない
+   if(w>0)setTimeout(()=>{if(rkGameId===gid&&state==='end'&&roomCtx&&roomCtx.rk)go()},w);else go();
+  }
   else rkMsg('ROUND MISSED');
  }
 }
@@ -1770,7 +1775,10 @@ function rkOnState(s){
 function rkEndUI(){
  if(state!=='end'||!(roomCtx&&roomCtx.rk))return;
  $('end').querySelector('.row').style.display=(rkS&&rkS.final)?'':'none';
+ const el=$('rkWL'),rd=rkS&&rkS.rounds&&rkS.rounds[roomCtx.rk.round],w=rd&&rd.win,m=w&&RK_WL[w];
+ if(m){el.textContent=m[0];el.style.color=m[1]}else{el.textContent='';el.style.color=''}
 }
+const RK_WL={me:['WIN','#ff2e2e'],opp:['LOST','#1a8cff'],d:['DRAW','#8c8f94']};
 setInterval(()=>{
  const e=$('rkCd');let n=0;
  if(state==='end'&&roomCtx&&roomCtx.rk&&rkS&&!rkS.final&&rkS.cur!==null&&rkS.cur>roomCtx.rk.round)n=Math.ceil((rkS.startAt-rkS.off-Date.now())/1000);
@@ -1791,8 +1799,10 @@ function rkStatusText(s){
 }
 function rkRenderMatch(s){
  rkRenderHead();
+ {const fe=$('rkFinalWL');
+  if(s.final){const m={win:['WIN','#ff2e2e'],lose:['LOST','#1a8cff'],draw:['DRAW','#8c8f94']}[s.final];fe.textContent=m[0];fe.style.color=m[1];fe.style.display=''}
+  else fe.style.display='none'}
  $('rkOpp').textContent='VS  '+s.opp.name+'  ·  '+RK_NAMES[s.opp.grade];
- rkLogoSet('rkOppImg','rkOppFb',s.opp.grade);
  const box=$('rkRounds');box.textContent='';
  s.rounds.forEach((r,i)=>{
   const row=document.createElement('div');row.className='r';

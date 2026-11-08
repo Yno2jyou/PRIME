@@ -282,8 +282,9 @@ html.sa #top>h1.logo{margin-top:115px!important}
  </div>
  <div class="rmsg" id="rkMsg"></div>
  <div id="rkMatchPanel" style="display:none;width:100%;margin-top:6px;align-items:center;flex-direction:column">
+  <div class="lab" id="rkMe" style="margin:0 0 8px;opacity:1"></div>
   <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
-   <div class="lab" id="rkOpp" style="margin:0"></div>
+   <div class="lab" id="rkOpp" style="margin:0;opacity:1"></div>
   </div>
   <div class="lab" id="rkWins"></div>
   <div id="rkRounds" style="width:100%;max-width:340px"></div>
@@ -1526,7 +1527,7 @@ async function loadRoom(){
 }
 // ===== 自動アップデート: サーバーのVERが自分より新しければ、安全な画面で自動リロード =====
 // worker.js の VER と同じ値にしておく(デプロイのたびに両方を上げる)
-const VER='2026-11-08.7';
+const VER='2026-11-08.8';
 let newVer='';
 function checkVer(v){if(typeof v==='string'&&v>VER)newVer=v}
 function safeToReload(){return['top','room','end','board','vs','rule','name','intro','tower','twres','delconf','twmode','nmsel','nmres'].includes(state)}
@@ -1714,7 +1715,7 @@ function rkShowMatch(){
 }
 function rkEnterMatch(){
  rkLaunched=-1;rkS=null;rkStartGrade=rkInfo.grade;rkMsg('');$('rkRankWL').style.display='none';
- $('rkRounds').textContent='';$('rkWins').textContent='';$('rkResult').textContent='';$('rkOpp').textContent='';$('rkAgain').style.display='none';
+ $('rkRounds').textContent='';$('rkWins').textContent='';$('rkResult').textContent='';$('rkOpp').textContent='';$('rkMe').textContent='';$('rkAgain').style.display='none';
  rkShowMatch();
  rkBeat(false);rkLoop();
 }
@@ -1784,6 +1785,16 @@ setInterval(()=>{
  if(state==='end'&&roomCtx&&roomCtx.rk&&rkS&&!rkS.final&&rkS.cur!==null&&rkS.cur>roomCtx.rk.round)n=Math.ceil((rkS.startAt-rkS.off-Date.now())/1000);
  if(n>0){e.style.display='';$('rkCdN').textContent=n}else e.style.display='none';
 },200);
+// 名前の表示: CPU47ランク文字+NO MISSランク文字(下線)+名前に色、続けてランクバトルの称号(色付き)
+function rkNameLine(el,pre,p){
+ el.textContent='';
+ if(pre)el.appendChild(document.createTextNode(pre));
+ const u=document.createElement('span');u.style.cssText='letter-spacing:.1em;font-weight:300';
+ setNameEl(u,{nm:p.nm|0,tw:p.tw?twLabel(p.tw):''},p.name);
+ const th=titleThemeOf(p.tw|0);if(th)u.classList.add('name-'+th);
+ el.appendChild(u);el.appendChild(document.createTextNode('  ·  '));
+ const g=document.createElement('span');g.textContent=RK_NAMES[p.grade];g.className=RK_CLS[p.grade];el.appendChild(g);
+}
 function rkScoreTxt(v){return v===null?'—':v<0?'DNF':String(v)}
 function rkStatusText(s){
  if(s.final){
@@ -1802,7 +1813,7 @@ function rkRenderMatch(s){
  {const fe=$('rkRankWL');
   if(s.final){const m={win:['WIN','#ff2e2e'],lose:['LOST','#1a8cff'],draw:['DRAW','#8c8f94']}[s.final];fe.textContent=m[0];fe.style.color=m[1];fe.style.display=''}
   else fe.style.display='none'}
- $('rkOpp').textContent='VS  '+s.opp.name+'  ·  '+RK_NAMES[s.opp.grade];
+ rkNameLine($('rkMe'),'YOU  ',s.me);rkNameLine($('rkOpp'),'VS  ',s.opp);
  const box=$('rkRounds');box.textContent='';
  s.rounds.forEach((r,i)=>{
   const row=document.createElement('div');row.className='r';

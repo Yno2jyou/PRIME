@@ -259,7 +259,6 @@ html.sa #top>h1.logo{margin-top:115px!important}
  <div id="rmLvSel" style="display:none;flex-direction:column;align-items:center;margin:12px 0 22px"><div class="lab" style="margin:0 0 4px .3em">LEVEL</div><div class="lv" id="rmLvPick"></div></div>
  <div class="link" id="rmStart" style="display:none">START</div>
  <div class="link" id="rmPlay">PLAY</div>
- <div class="link" id="rmShare" style="opacity:.5;font-size:10px">SHARE</div>
  <div class="rmsg" id="rmMsg"></div>
  <div class="lab" id="rmHere" style="display:none;margin:22px 0 0">IN ROOM 0</div>
  <div class="lab" id="rmRes" style="margin:12px 0 8px">RESULTS</div>
@@ -1568,10 +1567,6 @@ $('rmStart').onclick=async()=>{
  if(!RM||rmBusy)return;rmBusy=1;rmMsg('…');
  try{await call('room/start',{code:RM.code,cid:CID});rmBusy=0;rmMsg('');loadRoom()}
  catch(e){rmBusy=0;rmMsg('OFFLINE'+(e&&e.code?' · '+e.code:''))}
-};
-$('rmShare').onclick=async()=>{
- if(!RM)return;const u=/^https?:/.test(location.protocol)?location.origin+location.pathname+'?room='+RM.code:RM.code,t='PRIME  ROOM '+RM.code;
- try{if(navigator.share){await navigator.share({title:'PRIME',text:t,url:u})}else{await navigator.clipboard.writeText(t+'\n'+u);rmMsg('COPIED')}}catch(e){}
 };
 $('rmBack').onclick=()=>{state='top';show('top')};
 $('start').onclick=()=>begin();$('retry').onclick=()=>roomCtx?backToRoom():begin();$('home').onclick=()=>{state='top';show('top')};

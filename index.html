@@ -256,6 +256,7 @@ html.sa #top>h1.logo{margin-top:115px!important}
 <div class="screen" id="room"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center">
  <div class="lab">ROOM</div><div class="big" id="rmCode" style="letter-spacing:.12em;margin-left:.12em">----</div>
  <div class="lab" id="rmLv" style="margin:12px 0 22px">&nbsp;</div>
+ <div id="rmLvSel" style="display:none;flex-direction:column;align-items:center;margin:-10px 0 22px"><div class="lab" style="margin:0 0 4px .3em">LEVEL</div><div class="lv" id="rmLvPick"></div></div>
  <div class="link" id="rmStart" style="display:none">START</div>
  <div class="link" id="rmPlay">PLAY</div>
  <div class="link" id="rmShare" style="opacity:.5;font-size:10px">SHARE</div>
@@ -1465,7 +1466,7 @@ function showHook(id){
 function openVs(){state='vs';vsMsg('');mkLv($('vsLv'),()=>LV,l=>{LV=l});show('vs')}
 function openRoom(code,level){
  RM={code,level:level||0,played:false};state='room';show('room');
- $('rmCode').textContent=code;$('rmLv').textContent=level?'LEVEL '+level:'\u00a0';$('rmList').innerHTML='';$('rmRes').textContent='RESULTS';
+ $('rmCode').textContent=code;$('rmLv').textContent=level?'LEVEL '+level:'\u00a0';$('rmLvSel').style.display='none';$('rmList').innerHTML='';$('rmRes').textContent='RESULTS';
  rmMsg('');$('rmPlay').style.display='none';$('rmStart').style.display='none';hb();loadRoom();clearInterval(roomT);roomT=setInterval(()=>{if(state==='room')loadRoom()},1500);
 }
 async function loadRoom(){
@@ -1474,6 +1475,9 @@ async function loadRoom(){
   const t1=Date.now(),d=await get('room/info?code='+r0.code+'&cid='+CID),t2=Date.now();checkVer(d.ver);if(RM!==r0||state!=='room')return;
   const at=d.startAt?d.startAt-(d.now-(t1+t2)/2):0; // 開始時刻を自分の端末の時計に換算
   r0.level=d.level;r0.at=at;$('rmLv').textContent='LEVEL '+d.level;
+  // ホストのみ難易度を変更可能(ラウンド進行中は変更不可)
+  $('rmLvSel').style.display=d.host?'flex':'none';
+  if(d.host){const pk=$('rmLvPick'),key=d.level+'|'+(d.inRound?1:0);if(pk.dataset.k!==key){pk.dataset.k=key;mkLv(pk,()=>d.level,l=>setRoomLevel(l));pk.style.pointerEvents=d.inRound?'none':'';pk.style.opacity=d.inRound?'.3':''}}
   $('rmRes').textContent='RESULTS  '+d.list.length+' / '+d.joined;
   await Promise.race([fetchRanks(),new Promise(r=>setTimeout(r,800))]);if(RM!==r0||state!=='room')return;ensureMyRankSynced();
   if(d.list.length)rows($('rmList'),d.list.map(x=>({me:x.me,n:String(x.n).slice(0,24),s:x.s,t:x.t})));else $('rmList').innerHTML='';
@@ -1491,7 +1495,7 @@ async function loadRoom(){
 }
 // ===== 自動アップデート: サーバーのVERが自分より新しければ、安全な画面で自動リロード =====
 // worker.js の VER と同じ値にしておく(デプロイのたびに両方を上げる)
-const VER='2026-10-10.2';
+const VER='2026-11-08.1';
 let newVer='';
 function checkVer(v){if(typeof v==='string'&&v>VER)newVer=v}
 function safeToReload(){return['top','room','end','board','vs','rule','name','intro','tower','twres','delconf','twmode','nmsel','nmres'].includes(state)}
@@ -1552,6 +1556,11 @@ async function joinRoom(at){
  if(!RM||rmBusy)return;rmBusy=1;rmMsg('…');
  try{const r=await call('room/join',{code:RM.code,cid:CID,name:displayName()});rmBusy=0;rmMsg('');clearInterval(roomT);begin({code:RM.code,level:r.level,id:r.id,seed:r.seed,at:at||0})}
  catch(e){rmBusy=0;if(e&&e.code===409||e&&e.code===425){loadRoom();return}rmMsg(e&&e.code===403?'ROOM FULL':e&&e.code===404?'NO ROOM':e&&e.code===425?'WAITING FOR HOST…':'OFFLINE'+(e&&e.code?' · '+e.code:''))}
+}
+async function setRoomLevel(l){
+ if(!RM||rmBusy)return;rmBusy=1;rmMsg('…');
+ try{await call('room/level',{code:RM.code,cid:CID,level:l});rmBusy=0;rmMsg('');loadRoom()}
+ catch(e){rmBusy=0;rmMsg(e&&e.code===409?'IN ROUND':'OFFLINE'+(e&&e.code?' · '+e.code:''));loadRoom()}
 }
 $('rmPlay').onclick=()=>joinRoom(RM&&RM.at||0);
 $('rmStart').onclick=async()=>{

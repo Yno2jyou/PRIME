@@ -182,6 +182,7 @@ html.sa #top>h1.logo{margin-top:115px!important}
  <div class="link" id="sbtn" style="opacity:.5;font-size:10px;margin-top:0">SCORE</div>
  <div class="link" id="vsbtn" style="opacity:.5;font-size:10px;margin-top:0">FRIENDS</div>
  <div class="link" id="twbtn" style="opacity:.7;font-size:11px;letter-spacing:.18em;margin-top:8px;padding:4px 1.2em;border-bottom:1px solid var(--line)">PRIME TOWER</div>
+ <div class="link" id="rkbtn" style="opacity:.7;font-size:11px;letter-spacing:.18em;margin-top:8px;padding:4px 1.2em;border-bottom:1px solid var(--line)">RANKED BATTLE</div>
 </div>
 <div class="screen" id="tower"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center">
  <div class="lab">CPU 47</div>
@@ -265,11 +266,37 @@ html.sa #top>h1.logo{margin-top:115px!important}
  <div id="rmList" style="width:100%;text-align:left"></div>
  <div class="link" id="rmBack" style="opacity:.5;font-size:10px;margin-top:30px">TOP</div>
 </div></div>
+<div class="screen" id="rk"><div class="bd" style="text-align:center;display:flex;flex-direction:column;align-items:center">
+ <style>.rk-euclid{color:#8c8f94}.rk-fermat{color:#b87333}.rk-euler{color:#c0c6cf}.rklogo{object-fit:contain}:root[data-theme="dark"] .rklogo{filter:invert(1)}</style>
+ <div class="lab">RANKED BATTLE</div>
+ <div style="height:92px;display:flex;align-items:center;justify-content:center;margin:4px 0 6px">
+  <img id="rkLogo" class="rklogo" width="88" height="88" alt="" decoding="async" referrerpolicy="no-referrer" style="display:none">
+  <span id="rkLogoFb" style="display:none;font-size:64px;font-weight:300;line-height:1"></span>
+ </div>
+ <div class="big" id="rkRank" style="font-size:clamp(30px,9vw,52px)">EUCLID</div>
+ <div class="lab" id="rkPts" style="margin:10px 0 26px">0 / 500 pt</div>
+ <div id="rkLobby">
+  <div class="link" id="rkFind">MATCHING</div>
+  <div class="link" id="rkCancel" style="display:none;opacity:.5;font-size:10px">CANCEL</div>
+ </div>
+ <div class="rmsg" id="rkMsg"></div>
+ <div id="rkMatchPanel" style="display:none;width:100%;margin-top:6px;align-items:center;flex-direction:column">
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px">
+   <img id="rkOppImg" class="rklogo" width="26" height="26" alt="" decoding="async" referrerpolicy="no-referrer" style="display:none"><span id="rkOppFb" style="display:none;font-size:20px;line-height:1"></span>
+   <div class="lab" id="rkOpp" style="margin:0"></div>
+  </div>
+  <div class="lab" id="rkWins"></div>
+  <div id="rkRounds" style="width:100%;max-width:340px"></div>
+  <div class="lab" id="rkResult" style="margin-top:14px;min-height:14px"></div>
+  <div class="link" id="rkAgain" style="display:none;margin-top:6px">NEXT MATCH</div>
+ </div>
+ <div class="link" id="rkBack" style="opacity:.5;font-size:10px;margin-top:30px">TOP</div>
+</div></div>
 <div class="screen" id="game">
  <div class="hud" id="sc">SCORE 0</div><div class="hud" id="cb" style="left:0;right:0;text-align:center;opacity:.5;top:calc(env(safe-area-inset-top,0px) + 42px)"></div><div class="hud" id="tm">00:47</div><div class="hud ui" id="quit">TOP</div>
  <div id="field"></div><div id="cd"></div><div id="toast"><b>PRIME COMPLETE</b><span></span></div>
  <div id="cpuPanel" style="display:none;position:absolute;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);z-index:4;text-align:right;pointer-events:none;opacity:.55">
-  <div style="font-size:9px;letter-spacing:.28em;margin-bottom:4px">CPU</div>
+  <div id="cpuLab" style="font-size:9px;letter-spacing:.28em;margin-bottom:4px">CPU</div>
   <div id="cpuSc" style="font-size:15px;font-weight:300;letter-spacing:.06em;margin-bottom:6px">0</div>
   <div id="cpuField" style="font-size:18px;font-weight:200;letter-spacing:-.02em;min-height:22px;opacity:.85"></div>
  </div>
@@ -519,7 +546,7 @@ function bad(t){st.mi++;
  t.i.animate([{transform:'translateX(0)'},{transform:'translateX(-12px)'},{transform:'translateX(10px)'},{transform:'translateX(-5px)'},{transform:'translateX(0)'}],{duration:190,easing:'ease-out'});
  tone(170,.1,.07,0,'sine',110);vib(6);
 }
-function hudSc(){$('sc').textContent=nmoMode?'COUNT '+nmoCount+' / '+nmoReq:'SCORE '+score}
+function hudSc(){$('sc').textContent=nmoMode?'COUNT '+nmoCount+' / '+nmoReq:'SCORE '+score;if(roomCtx&&roomCtx.rk)rkSendScore()}
 function cbBase(){return nmoMode?'NO MISS  '+nmLetter(nmoStage):towerMode?twLabel(towerBattle)+'  '+towerBattle+'/47':''}
 function miss(t,dir,T){if(nmoMode){bad(t);nmoEnd(0,'MISS');return}clean=0;ops.push([toks.indexOf(t),dir,T]);lastOp=T;score-=pen;st.pn+=pen;hudSc();bad(t);pop(t,pen,1)}
 function act(t,dir){
@@ -598,7 +625,7 @@ addEventListener('keydown',e=>{
 });
 (function(){let raf=0,lw=innerWidth,lh=innerHeight;addEventListener('resize',()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const w=innerWidth,h=innerHeight;if(w===lw&&h===lh)return;lw=w;lh=h;layout()})})})();
 // ---------- flow ----------
-function show(id,q){['name','top','game','end','board','rule','rankt','vs','room','tower','twres','delconf','twmode','nmsel','nmres'].forEach(s=>{const e=$(s),on=s===id;
+function show(id,q){['name','top','game','end','board','rule','rankt','vs','room','tower','twres','delconf','twmode','nmsel','nmres','rk'].forEach(s=>{const e=$(s),on=s===id;
  if(q&&!on&&e.classList.contains('on')){e.style.transition='none';e.classList.remove('on');void e.offsetWidth;e.style.transition=''}else e.classList.toggle('on',on)});showHook(id)}
 const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
 let playDur=DUR;
@@ -612,7 +639,7 @@ function towerDur(b){
 async function begin(rm){
  if(state==='starting'||state==='count')return;const my=++runId;introStop();
  ac();AC.resume&&AC.resume();
- roomCtx=rm||null;if(rm){if(!LVkeep)LVkeep=LV;LV=rm.level}else if(LVkeep){LV=LVkeep;LVkeep=0}
+ roomCtx=rm||null;rkHud(!!(rm&&rm.rk));if(rm){if(!LVkeep)LVkeep=LV;LV=rm.level}else if(LVkeep){LV=LVkeep;LVkeep=0}
  playDur=DUR;towerMode=0;nmoMode=0;
  state='starting';field.innerHTML='';toks=[];score=0;done=0;cur=0;busy=false;last=0;ops=[];lastOp=-1e9;sid=null;rankP=null;st={sp:0,pr:0,mi:0,mc:0,bn:0,pn:0};
  $('sc').textContent='SCORE 0';$('tm').textContent=fmt(playDur);toast.classList.remove('s');show('game');
@@ -666,19 +693,19 @@ function skipReveal(){if(!revT.length)return;revT.forEach(clearTimeout);revT=[];
 $('end').addEventListener('click',skipReveal);
 function showStats(){
  const h=st.sp+st.pr,acc=h+st.mi?Math.round(h/(h+st.mi)*100):0;
- const L=[['PRIME COMPLETE',done],['MAX COMBO',st.mc],['BEST NUMBER',st.bn],['SPLITS',st.sp],['PRIMES',st.pr],['MISSES',st.mi],...(st.nb>0?[['NO MISS BONUS ×1.5','+'+st.nb]]:[]),['PENALTY',st.pn?'−'+st.pn:'0'],['ACCURACY',acc+'%'],[roomCtx?'ROOM RANK':'WORLD RANK',rankP?'…':'—']];
- $('rl').textContent=(roomCtx?'ROOM '+roomCtx.code+'  ':'')+'LEVEL '+LV+'  SCORE';$('retry').textContent=roomCtx?'ROOM':'RETRY';const el=$('stats');el.textContent='';
+ const L=[['PRIME COMPLETE',done],['MAX COMBO',st.mc],['BEST NUMBER',st.bn],['SPLITS',st.sp],['PRIMES',st.pr],['MISSES',st.mi],...(st.nb>0?[['NO MISS BONUS ×1.5','+'+st.nb]]:[]),['PENALTY',st.pn?'−'+st.pn:'0'],['ACCURACY',acc+'%'],[roomCtx?(roomCtx.rk?'ROUND SCORE':'ROOM RANK'):'WORLD RANK',rankP?'…':'—']];
+ $('rl').textContent=(roomCtx?(roomCtx.rk?'RANKED  ':'ROOM '+roomCtx.code+'  '):'')+'LEVEL '+LV+'  SCORE';$('retry').textContent=roomCtx?(roomCtx.rk?'MATCH':'ROOM'):'RETRY';const el=$('stats');el.textContent='';
  L.forEach(([k,v])=>{const r=document.createElement('div');r.className='r';const a=document.createElement('em');a.style.width='auto';a.style.flex='1';a.textContent=k;const b=document.createElement('b');b.style.fontSize='15px';b.textContent=v;r.append(a,b);el.appendChild(r)});
  const wr=el.lastChild.querySelector('b');rankEl=roomCtx?wr:null;
- if(rankP){if(roomCtx)rankP.then(()=>roomPoll()).catch(()=>{wr.textContent='—'});else rankP.then(x=>{wr.textContent=x&&x.rank?'#'+x.rank+(x.total?' / '+x.total:''):'—'}).catch(()=>{wr.textContent='—'})}
+ if(rankP){if(roomCtx&&roomCtx.rk)rankP.then(x=>{wr.textContent=x.score}).catch(()=>{wr.textContent='—'});else if(roomCtx)rankP.then(()=>roomPoll()).catch(()=>{wr.textContent='—'});else rankP.then(x=>{wr.textContent=x&&x.rank?'#'+x.rank+(x.total?' / '+x.total:''):'—'}).catch(()=>{wr.textContent='—'})}
 }
 // ---------- pause ----------
 let pAt=0,runId=0,pState='play';const cd=$('cd'),sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function hold(ms,my){let left=ms,l=performance.now();while(left>0){await sleep(30);const n=performance.now();if(state!=='pause')left-=n-l;l=n;if(runId!==my)return false}return true}
-function pause(){if(state==='starting'||state==='count'||state==='play'){pState=state;state='pause';pAt=performance.now();drag=null;$('conf').classList.add('on')}}
-function resume(){if(state!=='pause')return;$('conf').classList.remove('on');
+function pause(){if(roomCtx&&roomCtx.rk){if(state==='starting'||state==='count'||state==='play')$('conf').classList.add('on');return}if(state==='starting'||state==='count'||state==='play'){pState=state;state='pause';pAt=performance.now();drag=null;$('conf').classList.add('on')}}
+function resume(){if(roomCtx&&roomCtx.rk){$('conf').classList.remove('on');return}if(state!=='pause')return;$('conf').classList.remove('on');
  if(pState==='play'){t0+=performance.now()-pAt;state='play';requestAnimationFrame(tick);if(cpuVis.on)cpuVis.raf=requestAnimationFrame(tickCpuVis)}else state=pState}
-function toTop(){runId++;const c=$('conf');c.style.transition='none';c.classList.remove('on');void c.offsetWidth;c.style.transition='';
+function toTop(){rkLeave();runId++;const c=$('conf');c.style.transition='none';c.classList.remove('on');void c.offsetWidth;c.style.transition='';
  field.innerHTML='';toks=[];drag=null;cd.textContent='';cd.style.cssText='';stopCpuVis();towerMode=0;nmoMode=0;state='top';show('top',true)}
 $('quit').onclick=pause;$('cn').onclick=resume;
 $('cy').onclick=toTop;
@@ -711,7 +738,7 @@ function submit(){
  if(!roomCtx&&score<=0)return;const ts=Date.now();
  if(!roomCtx)try{const a=loadMine(LV).slice();a.push({s:score,t:ts,n:displayName()});a.sort((x,y)=>y.s-x.s);MINE[LV]=a.slice(0,5);pushSync()}catch(e){}
  if(sid){const id=sid;sid=null;const subName=displayName();
-  rankP=roomCtx?call('room/submit',{id,cid:CID,name:subName,ops}):call('submit',{id,name:subName,ops}).then(x=>{remember(x.id);return x});rankP.catch(()=>{})}
+  rankP=roomCtx?(roomCtx.rk?rkSubmit(roomCtx.rk,ops):call('room/submit',{id,cid:CID,name:subName,ops})):call('submit',{id,name:subName,ops}).then(x=>{remember(x.id);return x});rankP.catch(()=>{})}
 }
 const fd=t=>{const d=new Date(t),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes())};
 function nameThemeClass(){const t=titleThemeOf(towerBest);return t?'name-'+t:''}
@@ -1341,6 +1368,8 @@ function refreshLogoutBtn(){
 }
 async function doLogout(){
  if(authBusy)return;
+ try{await rkLeave()}catch(e){}   // 対戦中・マッチング中なら先に離脱(トークンが有効なうちに)
+ rkInfo={grade:0,pts:0,streak:0}; // 別アカウントへランク表示を持ち越さない
  // ログアウト前に現在の進捗をアカウントへ保存
  try{await saveAccountProgress()}catch(e){}
  authToken='';
@@ -1360,6 +1389,8 @@ async function doLogout(){
 }
 async function doDeleteAccount(){
  if(authBusy||!authToken)return;
+ try{await rkLeave()}catch(e){}
+ rkInfo={grade:0,pts:0,streak:0};
  authBusy=1;authMsg('DELETE…');
  const uid=normId((()=>{try{return localStorage.getItem('prime_uid')||PN||nm.value}catch(e){return PN||nm.value}})());
  try{
@@ -1495,7 +1526,7 @@ async function loadRoom(){
 }
 // ===== 自動アップデート: サーバーのVERが自分より新しければ、安全な画面で自動リロード =====
 // worker.js の VER と同じ値にしておく(デプロイのたびに両方を上げる)
-const VER='2026-11-08.1';
+const VER='2026-11-08.5';
 let newVer='';
 function checkVer(v){if(typeof v==='string'&&v>VER)newVer=v}
 function safeToReload(){return['top','room','end','board','vs','rule','name','intro','tower','twres','delconf','twmode','nmsel','nmres'].includes(state)}
@@ -1516,7 +1547,7 @@ setInterval(applyUpdate,2000); // プレイ中に新版を検知した場合は�
 // 在室ハートビート: ルーム画面と、ルームでのプレイ中/スコア画面にいる間、3秒おきに送る(サーバーは直近10秒の端末数を数える)
 function hbCode(){
  if(state==='room'&&RM)return RM.code;
- if(roomCtx&&['starting','count','play','pause','over','end'].includes(state))return roomCtx.code;
+ if(roomCtx&&!roomCtx.rk&&['starting','count','play','pause','over','end'].includes(state))return roomCtx.code;
  return '';
 }
 function hb(){const c=hbCode();if(c)call('room/hb',{code:c,cid:CID}).catch(()=>{})}
@@ -1525,7 +1556,7 @@ setInterval(hb,3000);
 // スコア画面を見ている間もホストの開始を監視し、新ラウンドが始まったら強制的にそのラウンドへ参加させる
 let watchBusy=0,rankEl=null;
 async function roomPoll(){
- if(state!=='end'||!roomCtx||watchBusy)return;
+ if(state!=='end'||!roomCtx||roomCtx.rk||watchBusy)return;
  watchBusy=1;
  try{
   const code=roomCtx.code,t1=Date.now(),d=await get('room/info?code='+code+'&cid='+CID),t2=Date.now();checkVer(d.ver);
@@ -1541,7 +1572,7 @@ async function roomPoll(){
  watchBusy=0;
 }
 setInterval(roomPoll,1500);
-function backToRoom(){if(roomCtx)openRoom(roomCtx.code,roomCtx.level);else{state='top';show('top')}}
+function backToRoom(){if(roomCtx&&roomCtx.rk){roomCtx=null;rkShowMatch();return}if(roomCtx)openRoom(roomCtx.code,roomCtx.level);else{state='top';show('top')}}
 $('vsbtn').onclick=openVs;$('vsBack').onclick=()=>{state='top';show('top')};
 $('vsNew').onclick=async()=>{
  if(rmBusy)return;rmBusy=1;vsMsg('…');
@@ -1569,7 +1600,247 @@ $('rmStart').onclick=async()=>{
  catch(e){rmBusy=0;rmMsg('OFFLINE'+(e&&e.code?' · '+e.code:''))}
 };
 $('rmBack').onclick=()=>{state='top';show('top')};
-$('start').onclick=()=>begin();$('retry').onclick=()=>roomCtx?backToRoom():begin();$('home').onclick=()=>{state='top';show('top')};
+// ===== RANKED BATTLE (ランクマッチ) =====
+// ランク情報はログインアカウントに紐づく(サーバー側で管理)。ラウンドの開始時刻・採点・勝敗・切断判定はすべてサーバーが決める。
+// ↓ 称号ロゴ画像(euclid/fermat/euler/gauss/riemann.png)の置き場所。別ホスティングの絶対URL(末尾は /)に書き換える。
+//   透過PNG(黒)。ダークテーマでは CSS で白に反転。読み込めないときは文字(Σ Fₙ e ℂ ζ)で代替表示。画像を差し替えたら RK_LOGO_VER を上げる
+const RK_LOGO_BASE='https://YOUR-IMAGE-HOST.example/rk-logos/',RK_LOGO_VER='1';
+const RK_NAMES=['EUCLID','FERMAT','EULER','GAUSS','RIEMANN'];
+const RK_FILES=['euclid','fermat','euler','gauss','riemann'];
+const RK_GLYPH=['Σ','Fₙ','e','ℂ','ζ'];   // 画像を読み込めなかったときの代替表示
+const RK_CLS=['rk-euclid','rk-fermat','rk-euler','name-gold','name-rainbow'];
+const RK_TH=[500,1000,5000,10000];
+let rkInfo={grade:0,pts:0,streak:0},rkGameId='',rkConn=null,rkPeer=null;
+let rkS=null,rkBeatTimer=0,rkBeating=false,rkLaunched=-1,rkStartGrade=0,rkPending=null;
+const rkSleep=ms=>new Promise(r=>setTimeout(r,ms));
+const rkTok=()=>{const t=authToken;return(!t||String(t).startsWith('local_'))?'':t};
+function rkMsg(t){$('rkMsg').textContent=t||''}
+function rkLogoSet(imgId,fbId,grade){
+ const im=$(imgId),fb=$(fbId),u=RK_LOGO_BASE+RK_FILES[grade]+'.png?v='+RK_LOGO_VER;
+ im.alt=RK_NAMES[grade];fb.textContent=RK_GLYPH[grade];
+ if(im.dataset.bad===u){im.style.display='none';fb.style.display='';return}
+ fb.style.display='none';im.style.display='';
+ im.onerror=()=>{im.dataset.bad=u;im.style.display='none';fb.style.display=''};
+ if(im.getAttribute('src')!==u)im.src=u;
+}
+function rkRenderHead(){
+ const g=rkInfo.grade,n=$('rkRank');
+ n.textContent=RK_NAMES[g];n.className='big '+RK_CLS[g];
+ $('rkPts').textContent=g<4?rkInfo.pts+' / '+RK_TH[g]+' pt':rkInfo.pts+' pt';
+ rkLogoSet('rkLogo','rkLogoFb',g);
+}
+async function rkLoadMe(){
+ if(!rkTok()){rkMsg('LOGIN REQUIRED');return false}
+ try{const r=await call('rk/me',{token:rkTok()});rkInfo={grade:r.grade,pts:r.pts,streak:r.streak};rkRenderHead();return true}
+ catch(e){rkMsg(e&&e.code===401?'LOGIN REQUIRED':'OFFLINE');return false}
+}
+function rkOpenLobby(){
+ state='rk';show('rk');rkMsg('');
+ if(!rkGameId){$('rkLobby').style.display='';$('rkMatchPanel').style.display='none'}
+ rkRenderHead();rkLoadMe();
+}
+// ---- マッチング: 対戦相手はサーバーだけが決める(クライアントが相手を指定・持ち込みできない) ----
+// 待機中は /api/rk/queue を1秒おきに呼ぶ(生存信号を兼ねる)。相手が決まるとゲームIDが返る
+let rkQ=null,rkQTimer=0;
+function rkStopSearch(notify){
+ clearTimeout(rkQTimer);rkQTimer=0;
+ if(!rkQ)return;
+ rkQ.canceled=true;rkQ=null;
+ $('rkFind').style.display='';$('rkCancel').style.display='none';rkMsg('');
+ if(notify!==false)call('rk/dequeue',{token:rkTok()}).catch(()=>{});
+}
+async function rkFind(){
+ if(rkQ||rkGameId)return;
+ if(!(await rkLoadMe()))return;
+ if(rkQ||rkGameId)return;
+ const q=rkQ={canceled:false};
+ $('rkFind').style.display='none';$('rkCancel').style.display='';rkMsg('対戦相手を探しています…');
+ const tick=async()=>{
+  if(q.canceled||rkQ!==q)return;
+  try{
+   const r=await call('rk/queue',{token:rkTok()});
+   if(q.canceled||rkQ!==q)return;
+   if(r.game){rkQ=null;$('rkCancel').style.display='none';rkMsg('対戦相手が見つかりました！');rkGameId=r.game;rkEnterMatch();return}
+   rkMsg('対戦相手を探しています…');
+  }catch(e){
+   if(q.canceled||rkQ!==q)return;
+   if(e&&e.code===401){rkMsg('LOGIN REQUIRED');rkStopSearch(false);return}
+   rkMsg('サーバーに接続中…(再試行します)');
+  }
+  rkQTimer=setTimeout(tick,1000);
+ };
+ tick();
+}
+// 試合中のP2P(相手のスコアを低遅延で表示するためだけに使う。判定・切断検知には使わない)
+// 接続先のIDは試合ID(参加者だけが知る)から作る。つながらなくてもサーバー中継で続行できる
+const RK_LINK_PREFIX='prime-rk3-';
+function rkLink(){
+ if(typeof Peer==='undefined'||rkPeer||!rkS||!rkGameId)return;
+ const gid=rkGameId,side=rkS.side;
+ const bind=c=>{
+  rkConn=c;
+  c.on('data',d=>{
+   if(!d||rkConn!==c)return;
+   if(d.type==='rk_poke')rkBeat(false);
+   else if(d.type==='rk_score'){if(roomCtx&&roomCtx.rk&&d.r===roomCtx.rk.round&&Number.isFinite(d.s))$('cpuSc').textContent=d.s}
+  });
+  c.on('close',()=>{if(rkConn===c)rkConn=null});
+  c.on('error',()=>{if(rkConn===c)rkConn=null});
+ };
+ try{
+  if(side==='a'){
+   const p=rkPeer=new Peer(RK_LINK_PREFIX+gid+'-a',{debug:0});
+   p.on('connection',c=>{if(rkGameId===gid&&!(rkConn&&rkConn.open))bind(c)});
+   p.on('error',()=>{});
+  }else{
+   const p=rkPeer=new Peer({debug:0});
+   p.on('error',()=>{});
+   const attempt=()=>{
+    if(rkGameId!==gid||rkPeer!==p||(rkS&&rkS.final)||(rkConn&&rkConn.open))return;
+    try{const c=p.connect(RK_LINK_PREFIX+gid+'-a',{reliable:true});c.on('open',()=>{if(rkGameId===gid&&!(rkConn&&rkConn.open))bind(c)})}catch(e){}
+    setTimeout(attempt,3000);
+   };
+   p.on('open',attempt);
+  }
+ }catch(e){}
+}
+
+function rkShowMatch(){
+ state='rk';show('rk');
+ $('rkLobby').style.display='none';$('rkMatchPanel').style.display='';
+ if(rkS)rkRenderMatch(rkS);
+}
+function rkEnterMatch(){
+ rkLaunched=-1;rkS=null;rkStartGrade=rkInfo.grade;rkMsg('');
+ $('rkRounds').textContent='';$('rkWins').textContent='';$('rkResult').textContent='';$('rkOpp').textContent='';$('rkAgain').style.display='none';
+ rkShowMatch();
+ rkBeat(false);rkLoop();
+}
+// 状態の取得間隔: ロビー・結果待ち・次ラウンド待ちは0.6秒、プレイ中は1.5秒(P2Pが切れているときは相手スコア中継のため1秒)
+function rkNextDelay(){
+ if(!rkS||rkS.final)return 1500;
+ if(state==='rk'||state==='end')return 600;
+ return(rkConn&&rkConn.open)?1500:1000;
+}
+function rkLoop(){
+ clearTimeout(rkBeatTimer);
+ rkBeatTimer=setTimeout(async()=>{await rkBeat(false);if(rkGameId&&!(rkS&&rkS.final))rkLoop()},rkNextDelay());
+}
+async function rkBeat(dc){
+ if(!rkGameId||rkBeating)return;
+ rkBeating=true;
+ try{
+  const t1=Date.now(),s=await call('rk/state',{token:rkTok(),game:rkGameId,dc:dc?1:0}),t2=Date.now();
+  if(!rkGameId)return;
+  s.off=s.now-(t1+t2)/2; // サーバー時刻 − この端末の時刻
+  rkS=s;rkOnState(s);if(!rkPeer&&!s.final)rkLink();
+ }catch(e){
+  if(e&&e.code===404){rkMsg('試合が見つかりません');rkLeave()}
+  else if(e&&e.code===401)rkMsg('LOGIN REQUIRED');
+  else rkMsg('OFFLINE');
+ }finally{rkBeating=false}
+}
+function rkAbortRound(){ // 相手の切断などで試合が確定したとき、プレイ中のラウンドを打ち切って結果画面へ
+ runId++;$('conf').classList.remove('on');field.innerHTML='';toks=[];drag=null;cd.textContent='';cd.style.cssText='';sid=null;
+ roomCtx=null;rkHud(false);rkShowMatch();
+}
+function rkOnState(s){
+ rkInfo={grade:s.me.grade,pts:s.me.pts,streak:s.me.streak};
+ // P2Pが切れているときは、サーバー中継の相手スコア(表示専用)をHUDに反映
+ if(s.live&&roomCtx&&roomCtx.rk&&s.live.r===roomCtx.rk.round&&!(rkConn&&rkConn.open)&&['starting','count','play'].includes(state))$('cpuSc').textContent=s.live.s;
+ if(state==='rk')rkRenderMatch(s);
+ if(s.final){
+  clearInterval(rkBeatTimer);rkBeatTimer=0;
+  if(roomCtx&&roomCtx.rk){
+   if(['starting','count','play','pause','over'].includes(state))rkAbortRound();
+   else if(state==='end')setTimeout(()=>{if(state==='end'&&roomCtx&&roomCtx.rk){roomCtx=null;rkShowMatch()}},1800);
+  }
+  return;
+ }
+ if(s.cur!==null&&!s.played&&s.seed!==null&&rkLaunched!==s.cur&&(state==='rk'||(state==='end'&&roomCtx&&roomCtx.rk))){
+  rkLaunched=s.cur;
+  const at=s.startAt-s.off; // 開始時刻(この端末の時計)
+  if(Date.now()<at+8000)begin({code:'RANKED',level:s.levels[s.cur],id:'rk',seed:s.seed,at,rk:{game:rkGameId,round:s.cur}});
+  else rkMsg('ROUND MISSED');
+ }
+}
+function rkScoreTxt(v){return v===null?'—':v<0?'DNF':String(v)}
+function rkStatusText(s){
+ if(s.final){
+  let t={win:'MATCH WIN',lose:'MATCH LOSE',draw:'DRAW'}[s.final]+(s.delta?'   '+(s.delta>0?'+':'')+s.delta+' pt':'');
+  if(!s.rated&&s.final!=='draw')t+='   (UNRATED)';
+  return t;
+ }
+ if(s.cur===null)return '';
+ if(s.played)return 'WAITING FOR OPPONENT…';
+ const left=Math.ceil((s.startAt-s.off-Date.now())/1000);
+ if(left>0)return 'ROUND '+(s.cur+1)+'  STARTS IN '+left;
+ return rkLaunched===s.cur?'ROUND MISSED':'STARTING…';
+}
+function rkRenderMatch(s){
+ rkRenderHead();
+ $('rkOpp').textContent='VS  '+s.opp.name+'  ·  '+RK_NAMES[s.opp.grade];
+ rkLogoSet('rkOppImg','rkOppFb',s.opp.grade);
+ const box=$('rkRounds');box.textContent='';
+ s.rounds.forEach((r,i)=>{
+  const row=document.createElement('div');row.className='r';
+  const a=document.createElement('em');a.style.width='auto';a.style.flex='none';a.textContent='R'+(i+1)+'  LV '+r.level;
+  const b=document.createElement('b');b.style.fontSize='15px';b.style.flex='1';b.textContent=rkScoreTxt(r.me)+'  :  '+rkScoreTxt(r.opp);
+  const w=document.createElement('span');w.textContent=r.win==='me'?'WIN':r.win==='opp'?'LOSE':r.win==='d'?'DRAW':'';
+  row.append(a,b,w);box.appendChild(row);
+ });
+ $('rkWins').textContent='YOU '+s.wins.me+'  -  '+s.wins.opp+'  OPP';
+ $('rkResult').textContent=rkStatusText(s);
+ if(s.final){
+  const note=[];
+  if(s.me.grade>rkStartGrade)note.push('RANK UP  '+RK_NAMES[s.me.grade]);
+  if(s.reason==='dc')note.push(s.final==='win'?'OPPONENT DISCONNECTED':'DISCONNECTED');
+  else if(s.reason==='forfeit')note.push(s.final==='win'?'OPPONENT LEFT':'YOU LEFT');
+  else if(s.reason==='abort')note.push('MATCH VOID');
+  rkMsg(note.join('   '));
+  $('rkAgain').style.display='';
+ }
+}
+setInterval(()=>{if(state==='rk'&&rkS&&!rkS.final)$('rkResult').textContent=rkStatusText(rkS)},500);
+
+// ---- ゲーム中の連携 ----
+function rkHud(on){ // 右下に相手のスコアをリアルタイム表示(CPU戦のパネルを流用)
+ const p=$('cpuPanel');
+ if(on){p.style.display='';$('cpuLab').textContent='OPP';$('cpuSc').textContent='0';$('cpuField').textContent=''}
+ else if($('cpuLab').textContent==='OPP'){p.style.display='none';$('cpuLab').textContent='CPU'}
+}
+let rkLiveAt=0,rkLiveTO=0;
+function rkSendScore(){
+ if(!(roomCtx&&roomCtx.rk))return;
+ if(rkConn&&rkConn.open){try{rkConn.send({type:'rk_score',r:roomCtx.rk.round,s:score})}catch(e){}return}
+ // P2Pが切れているときはサーバー経由で中継(0.9秒に1回。最後の更新は遅れて送る)
+ const w=rkLiveAt+900-Date.now();
+ if(w>0){if(!rkLiveTO)rkLiveTO=setTimeout(()=>{rkLiveTO=0;rkSendScore()},w);return}
+ rkLiveAt=Date.now();
+ call('rk/live',{token:rkTok(),game:roomCtx.rk.game,round:roomCtx.rk.round,score}).catch(()=>{});
+}
+function rkSubmit(rk,ops){
+ rkPending=call('rk/round',{token:rkTok(),game:rk.game,round:rk.round,ops});
+ rkPending.then(()=>{rkBeat(false);try{rkConn&&rkConn.open&&rkConn.send({type:'rk_poke'})}catch(e){}}).catch(()=>{});
+ return rkPending;
+}
+// 離脱(途中で抜けたら負け)
+async function rkLeave(){
+ if(!(rkQ||rkGameId||rkConn))return;
+ rkStopSearch();clearInterval(rkBeatTimer);rkBeatTimer=0;
+ const id=rkGameId,final=!!(rkS&&rkS.final),conn=rkConn,peer=rkPeer;
+ rkGameId='';rkS=null;rkConn=null;rkPeer=null;rkLaunched=-1;rkPending=null;
+ if(roomCtx&&roomCtx.rk)roomCtx=null;
+ rkHud(false);
+ $('rkLobby').style.display='';$('rkMatchPanel').style.display='none';
+ if(id&&!final){try{await call('rk/forfeit',{token:rkTok(),game:id})}catch(e){}}
+ try{conn&&conn.close()}catch(e){}try{peer&&peer.destroy()}catch(e){}
+}
+$('rkbtn').onclick=rkOpenLobby;
+$('rkFind').onclick=rkFind;$('rkCancel').onclick=rkStopSearch;
+$('rkBack').onclick=async()=>{await rkLeave();state='top';show('top');refreshWho()};
+$('rkAgain').onclick=async()=>{await rkLeave();rkOpenLobby();rkFind()};
+$('start').onclick=()=>begin();$('retry').onclick=()=>roomCtx?backToRoom():begin();$('home').onclick=()=>{rkLeave();state='top';show('top')};
 // ========== PRIME TOWER 〜回廊〜 ==========
 let towerMode=0,towerBattle=1,towerBest=0,cpuScore=0,nmBest=0,nmoMode=0,nmoStage=0,nmoCount=0,nmoReq=0,qLV=1,nmoSel=0,nmoFirst=0;
 const TW_RANKS=[
